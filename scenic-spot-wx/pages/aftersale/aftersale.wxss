@@ -1,0 +1,78 @@
+.btn.ghost {
+	background: #e2e8f0;
+	color: #0f172a;
+	margin-top: 8rpx;
+}
+
+.toolbar {
+	display: grid;
+	gap: 10rpx;
+}
+
+.reschedule-wrap {
+	display: grid;
+	gap: 10rpx;
+	margin-top: 6rpx;
+}
+
+.tip {
+	font-size: 22rpx;
+	color: #64748b;
+	line-height: 1.5;
+}
+
+.status-tabs {
+	white-space: nowrap;
+}
+
+.tab-row {
+	display: inline-flex;
+	gap: 10rpx;
+}
+
+.tab {
+	border-radius: 999rpx;
+	border: 1rpx solid #d1d5db;
+	color: #64748b;
+	padding: 8rpx 18rpx;
+	font-size: 22rpx;
+	background: #ffffff;
+}
+
+.tab.active {
+	border-color: #fb923c;
+	color: #c2410c;
+	background: #fff7ed;
+}
+
+.record {
+	margin-top: 12rpx;
+	padding-top: 12rpx;
+	border-top: 1rpx dashed #d1d5db;
+	display: grid;
+	gap: 8rpx;
+}
+
+.row { font-size: 24rpx; color: #475569; }
+.between { display: flex; align-items: center; justify-content: space-between; }
+.req { font-weight: 700; color: #0f172a; }
+.note { color: #64748b; }
+
+.tag {
+	font-size: 20rpx;
+	border-radius: 999rpx;
+	padding: 4rpx 12rpx;
+	color: #fff;
+	background: #64748b;
+}
+
+.tag.SUBMITTED { background: #0284c7; }
+.tag.DONE { background: #16a34a; }
+.tag.REJECTED { background: #dc2626; }
+
+.empty {
+	margin-top: 24rpx;
+	text-align: center;
+	color: #94a3b8;
+	font-size: 24rpx;
+}

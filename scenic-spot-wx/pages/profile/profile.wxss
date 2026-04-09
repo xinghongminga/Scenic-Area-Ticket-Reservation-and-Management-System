@@ -1,0 +1,65 @@
+.profile {
+  display: grid;
+  gap: 12rpx;
+}
+
+.title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6rpx;
+}
+
+.label {
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.avatar {
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 50%;
+  background: #e2e8f0;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  font-size: 24rpx;
+}
+
+.tip {
+  color: #0f766e;
+  font-size: 24rpx;
+}
+
+.readonly {
+  border: 1rpx solid #d1d5db;
+  border-radius: 10rpx;
+  padding: 14rpx;
+  color: #475569;
+  background: #f8fafc;
+  font-size: 26rpx;
+}
+
+.input {
+  border: 1rpx solid #d1d5db;
+  border-radius: 10rpx;
+  padding: 14rpx;
+  background: #fff;
+  font-size: 26rpx;
+  color: #0f172a;
+}
+
+.btn.danger {
+  background: #ef4444;
+  color: #fff;
+}

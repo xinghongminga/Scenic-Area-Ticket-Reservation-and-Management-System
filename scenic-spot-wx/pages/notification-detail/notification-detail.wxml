@@ -1,0 +1,10 @@
+<view class="page">
+  <view wx:if="{{detail}}" class="card detail-card">
+    <view class="type-pill">{{typeText}}</view>
+    <view class="detail-title">{{detail.title}}</view>
+    <view class="detail-time">{{detail.createdAt}}</view>
+    <view class="content-block">{{detail.content}}</view>
+  </view>
+
+  <view wx:if="{{!detail}}" class="empty">通知加载中...</view>
+</view>

@@ -1,0 +1,72 @@
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section {
+  display: grid;
+  gap: 10rpx;
+}
+
+.sub-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 14rpx;
+}
+
+.k { color: #64748b; }
+.v { color: #0f172a; font-weight: 600; }
+
+.item, .ticket {
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
+  padding: 12rpx;
+}
+
+.qr-wrap {
+  margin: 12rpx 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240rpx;
+  background: #f8fafc;
+  border-radius: 12rpx;
+}
+
+.qr-image {
+  width: 220rpx;
+  height: 220rpx;
+}
+
+.qr-fallback {
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
+.qr-text {
+  word-break: break-all;
+}
+
+.line { font-size: 24rpx; color: #334155; }
+.between { display: flex; justify-content: space-between; }
+.name { font-size: 26rpx; font-weight: 700; color: #0f172a; }
+.money { color: #dc2626; font-weight: 700; }
+
+.btn.ghost {
+  background: #e2e8f0;
+  color: #0f172a;
+  padding: 8rpx 16rpx;
+}
+
+.empty {
+  margin-top: 30rpx;
+  text-align: center;
+  color: #94a3b8;
+}

@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="card hero">
+    <view>
+      <view class="title">消息通知</view>
+      <view class="hero-sub">支付成功、核销结果、售后进度都会汇总到这里</view>
+    </view>
+    <view class="badge">未读 {{unreadCount}}</view>
+  </view>
+
+  <view class="card toolbar">
+    <button class="mini ghost" bindtap="loadNotifications" loading="{{loading}}">刷新</button>
+    <button class="mini primary" bindtap="markAllRead" disabled="{{!list.length}}">全部已读</button>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card notice-item {{item.isRead ? 'is-read' : 'is-unread'}}" data-id="{{item.id}}" bindtap="openDetail">
+    <view class="notice-top">
+      <view class="type-pill">{{item.typeText}}</view>
+      <view wx:if="{{!item.isRead}}" class="dot"></view>
+    </view>
+    <view class="notice-title">{{item.title}}</view>
+    <view class="notice-content">{{item.content}}</view>
+    <view class="notice-time">{{item.createdAt}}</view>
+  </view>
+
+  <view wx:if="{{!list.length && !loading}}" class="empty">暂无通知消息</view>
+</view>

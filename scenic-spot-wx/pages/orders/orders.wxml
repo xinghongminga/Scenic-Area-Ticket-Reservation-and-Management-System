@@ -1,0 +1,52 @@
+<view class="page">
+  <view wx:if="{{noticeBar.visible}}" class="notice-bar">
+    <view class="notice-content">
+      <view class="notice-title">{{noticeBar.title}}</view>
+      <view class="notice-text">{{noticeBar.content}}</view>
+    </view>
+    <button class="notice-btn" bindtap="closeNoticeBar">确认</button>
+  </view>
+
+  <view class="card topbar">
+    <view class="title">我的订单</view>
+    <button class="refresh-btn" bindtap="onRefreshTap">刷新</button>
+  </view>
+
+  <scroll-view class="tabs" scroll-x>
+    <view class="tab-row">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="tab {{activeTab===item.key?'active':''}}"
+        data-key="{{item.key}}"
+        bindtap="onTabTap"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="card order" wx:for="{{list}}" wx:key="orderNo" data-orderno="{{item.orderNo}}" bindtap="goDetail">
+    <view class="order-main">
+      <image class="ticket-cover" src="{{item.ticketImageUrl || defaultTicketImage}}" mode="aspectFill" />
+      <view class="order-body">
+        <view class="line between">
+          <view class="order-no">{{item.orderNo}}</view>
+          <view class="status {{item.status}}">{{item.statusText}}</view>
+        </view>
+        <view class="line ticket-name">{{item.ticketName}}</view>
+        <view class="line">出行日期 {{item.visitDate}} · 时段 {{item.timeslotId}}</view>
+        <view class="line amount">实付 ¥{{item.amountYuanText}}</view>
+      </view>
+    </view>
+    <view class="op-row">
+      <button wx:if="{{item.status==='UNPAID'}}" class="mini primary" data-orderno="{{item.orderNo}}" catchtap="payNow" loading="{{processingOrderNo===item.orderNo}}" disabled="{{processingOrderNo===item.orderNo}}">{{processingOrderNo===item.orderNo ? '支付中...' : '去支付'}}</button>
+      <view class="right-actions">
+        <button class="mini danger" data-orderno="{{item.orderNo}}" catchtap="deleteOrder">删除订单</button>
+        <button wx:if="{{item.status==='PAID' || item.status==='USED'}}" class="mini" data-orderno="{{item.orderNo}}" catchtap="goAftersale">申请售后</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!list.length}}" class="empty">当前筛选下暂无订单</view>
+</view>

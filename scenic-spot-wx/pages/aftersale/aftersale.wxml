@@ -1,0 +1,43 @@
+<view class="page">
+  <view class="card">
+    <view class="title">发起售后</view>
+    <input class="input" placeholder="订单号" value="{{orderNo}}" bindinput="onOrderNoInput" />
+    <picker range="{{types}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
+      <view class="input">类型: {{types[typeIndex].label}}</view>
+    </picker>
+    <view wx:if="{{types[typeIndex].key==='RESCHEDULE'}}" class="reschedule-wrap">
+      <button class="btn ghost" loading="{{loadingReschedule}}" bindtap="loadRescheduleOptions">查询可改签日期</button>
+      <view class="tip" wx:if="{{!availableDateRange.length}}">仅能选择有余票的日期，请输入订单号后点击查询</view>
+      <picker wx:if="{{availableDateRange.length}}" range="{{availableDateRange}}" value="{{targetDateIndex}}" bindchange="onDateChange">
+        <view class="input">改签到日期: {{targetVisitDate || '请选择日期'}}</view>
+      </picker>
+      <picker wx:if="{{targetTimeslotRange.length}}" range="{{targetTimeslotRange}}" value="{{targetTimeslotIndex}}" bindchange="onTimeslotChange">
+        <view class="input">改签到时段: {{targetTimeslotRange[targetTimeslotIndex]}}</view>
+      </picker>
+      <view class="tip" wx:if="{{availableDateRange.length && !targetTimeslotRange.length}}">该日期暂无可改签时段</view>
+    </view>
+    <input class="input" placeholder="原因" value="{{reason}}" bindinput="onReasonInput" />
+    <button class="btn" bindtap="submit">提交申请</button>
+  </view>
+
+  <view class="card">
+    <view class="title">售后记录</view>
+    <view class="toolbar">
+      <button class="btn ghost" bindtap="load">刷新</button>
+      <scroll-view class="status-tabs" scroll-x>
+        <view class="tab-row">
+          <view wx:for="{{statusTabs}}" wx:key="key" class="tab {{activeStatus===item.key?'active':''}}" data-key="{{item.key}}" bindtap="onStatusTabTap">{{item.label}}</view>
+        </view>
+      </scroll-view>
+    </view>
+    <view class="record" wx:for="{{list}}" wx:key="reqNo">
+      <view class="row between">
+        <view class="req">{{item.reqNo}}</view>
+        <view class="tag {{item.status}}">{{item.statusText}}</view>
+      </view>
+      <view class="row">订单 {{item.orderNo}} · {{item.reqTypeText}}</view>
+      <view class="row note">原因: {{item.reason || '无'}}</view>
+    </view>
+    <view wx:if="{{!list.length}}" class="empty">暂无售后记录</view>
+  </view>
+</view>

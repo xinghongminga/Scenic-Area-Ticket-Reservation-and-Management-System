@@ -1,0 +1,41 @@
+<view class="page">
+  <view class="card head">
+    <view class="title">订单详情</view>
+    <button class="btn ghost" bindtap="loadDetail">刷新</button>
+  </view>
+
+  <view wx:if="{{detail}}" class="card section">
+    <view class="kv"><text class="k">订单号</text><text class="v">{{detail.orderNo}}</text></view>
+    <view class="kv"><text class="k">状态</text><text class="v">{{detail.statusText}}</text></view>
+    <view class="kv"><text class="k">出行日期</text><text class="v">{{detail.visitDate}}</text></view>
+    <view class="kv"><text class="k">时段ID</text><text class="v">{{detail.timeslotId}}</text></view>
+    <view class="kv"><text class="k">订单金额</text><text class="v money">¥{{detail.totalAmountYuanText}}</text></view>
+  </view>
+
+  <view class="card section" wx:if="{{itemList.length}}">
+    <view class="sub-title">门票明细</view>
+    <view class="item" wx:for="{{itemList}}" wx:key="ticketId">
+      <view class="line between">
+        <view class="name">{{item.ticketName}}</view>
+        <view class="count">x{{item.qty}}</view>
+      </view>
+      <view class="line">单价 ¥{{item.unitPriceYuanText}}</view>
+      <view class="line money">小计 ¥{{item.amountYuanText}}</view>
+    </view>
+  </view>
+
+  <view class="card section" wx:if="{{ticketList.length}}">
+    <view class="sub-title">电子票码</view>
+    <view class="ticket" wx:for="{{ticketList}}" wx:key="verifyCode">
+      <view class="line">核验码：{{item.verifyCode}}</view>
+      <view class="qr-wrap">
+        <image wx:if="{{item.qrImageUrl}}" class="qr-image" src="{{item.qrImageUrl}}" mode="aspectFit" />
+        <view wx:else class="qr-fallback">二维码加载中</view>
+      </view>
+      <view class="line qr-text">二维码编号：{{item.qrCode}}</view>
+      <view class="line">状态：{{item.statusText}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!detail && !loading}}" class="empty">未查询到订单详情</view>
+</view>
