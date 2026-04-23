@@ -30,6 +30,11 @@ public interface TicketInventoryMapper {
                                @Param("visitDate") LocalDate visitDate,
                                @Param("timeslotId") Long timeslotId);
 
+    @Select("select * from ticket_inventory where ticket_id=#{ticketId} and visit_date=#{visitDate} and timeslot_id=#{timeslotId} limit 1")
+    TicketInventoryRow findOne(@Param("ticketId") Long ticketId,
+                               @Param("visitDate") LocalDate visitDate,
+                               @Param("timeslotId") Long timeslotId);
+
     @Insert("insert into ticket_inventory(ticket_id, visit_date, timeslot_id, total_qty, sold_qty, locked_qty, status) " +
         "values(#{ticketId}, #{visitDate}, #{timeslotId}, #{totalQty}, 0, 0, 1)")
     int create(@Param("ticketId") Long ticketId,
@@ -43,11 +48,33 @@ public interface TicketInventoryMapper {
     @Update("update ticket_inventory set locked_qty=locked_qty + #{qty}, updated_at=now() where id=#{id}")
     int addLocked(@Param("id") Long id, @Param("qty") Integer qty);
 
+    @Update("update ticket_inventory set locked_qty=locked_qty + #{qty}, updated_at=now() " +
+        "where ticket_id=#{ticketId} and visit_date=#{visitDate} and timeslot_id=#{timeslotId} " +
+        "and status=1 and (total_qty - sold_qty - locked_qty) >= #{qty}")
+    int tryAddLocked(@Param("ticketId") Long ticketId,
+                     @Param("visitDate") LocalDate visitDate,
+                     @Param("timeslotId") Long timeslotId,
+                     @Param("qty") Integer qty);
+
     @Update("update ticket_inventory set locked_qty=GREATEST(0, locked_qty - #{qty}), updated_at=now() where id=#{id}")
     int subLocked(@Param("id") Long id, @Param("qty") Integer qty);
 
     @Update("update ticket_inventory set locked_qty=locked_qty - #{qty}, sold_qty=sold_qty + #{qty}, updated_at=now() where id=#{id}")
     int lockToSold(@Param("id") Long id, @Param("qty") Integer qty);
+
+    @Update("update ticket_inventory set locked_qty=locked_qty - #{qty}, sold_qty=sold_qty + #{qty}, updated_at=now() " +
+        "where ticket_id=#{ticketId} and visit_date=#{visitDate} and timeslot_id=#{timeslotId} and locked_qty >= #{qty}")
+    int tryLockToSold(@Param("ticketId") Long ticketId,
+                      @Param("visitDate") LocalDate visitDate,
+                      @Param("timeslotId") Long timeslotId,
+                      @Param("qty") Integer qty);
+
+    @Update("update ticket_inventory set locked_qty=locked_qty - #{qty}, updated_at=now() " +
+        "where ticket_id=#{ticketId} and visit_date=#{visitDate} and timeslot_id=#{timeslotId} and locked_qty >= #{qty}")
+    int trySubLocked(@Param("ticketId") Long ticketId,
+                     @Param("visitDate") LocalDate visitDate,
+                     @Param("timeslotId") Long timeslotId,
+                     @Param("qty") Integer qty);
 
     @Update("update ticket_inventory set sold_qty=sold_qty + #{qty}, updated_at=now() where id=#{id}")
     int addSold(@Param("id") Long id, @Param("qty") Integer qty);

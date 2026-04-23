@@ -4,6 +4,7 @@ import com.example.scencispotback.domain.TicketOrder;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Mapper
 public interface TicketOrderMapper {
@@ -16,11 +17,20 @@ public interface TicketOrderMapper {
     @Select("select * from ticket_order where order_no = #{orderNo} limit 1")
     TicketOrder findByOrderNo(@Param("orderNo") String orderNo);
 
+    @Select("select * from ticket_order where order_no = #{orderNo} limit 1 for update")
+    TicketOrder findByOrderNoForUpdate(@Param("orderNo") String orderNo);
+
     @Select("select * from ticket_order where order_no = #{orderNo} and user_id=#{userId} limit 1")
     TicketOrder findByOrderNoAndUserId(@Param("orderNo") String orderNo, @Param("userId") Long userId);
 
     @Select("select * from ticket_order where id=#{id} limit 1")
     TicketOrder findById(@Param("id") Long id);
+
+    @Select("select * from ticket_order where id=#{id} limit 1 for update")
+    TicketOrder findByIdForUpdate(@Param("id") Long id);
+
+    @Select("select id from ticket_order where status='UNPAID' and created_at <= #{cutoff} order by id asc")
+    List<Long> findExpiredUnpaidIds(@Param("cutoff") LocalDateTime cutoff);
 
     @Select("select o.*, i.ticket_name as ticket_name, t.image_url as ticket_image_url " +
         "from ticket_order o " +
@@ -53,6 +63,11 @@ public interface TicketOrderMapper {
 
     @Update("update ticket_order set status=#{toStatus}, updated_at=now() where id=#{id}")
     int updateStatus(@Param("id") Long id, @Param("toStatus") String toStatus);
+
+    @Update("update ticket_order set status=#{toStatus}, close_reason=#{closeReason}, updated_at=now() where id=#{id}")
+    int updateStatusAndReason(@Param("id") Long id,
+                              @Param("toStatus") String toStatus,
+                              @Param("closeReason") String closeReason);
 
     @Update("update ticket_order set visit_date=#{visitDate}, timeslot_id=#{timeslotId}, updated_at=now() where id=#{id}")
     int updateVisit(@Param("id") Long id,

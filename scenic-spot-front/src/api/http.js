@@ -35,7 +35,28 @@ async function request(path, options = {}) {
     config.body = JSON.stringify(options.body);
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, config);
+  const controller = new AbortController();
+  const timeoutMs = Number(options.timeoutMs || 0);
+  let timer = null;
+  if (timeoutMs > 0) {
+    timer = setTimeout(() => controller.abort(), timeoutMs);
+  }
+
+  config.signal = controller.signal;
+
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, config);
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error(`请求超时（>${timeoutMs}ms）`);
+    }
+    throw err;
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
   const text = await response.text();
   let data = null;
   try {

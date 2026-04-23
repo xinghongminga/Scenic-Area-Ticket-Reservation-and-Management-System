@@ -65,4 +65,11 @@ public interface UserAccountMapper {
     int updateOauthProfile(@Param("id") Long id,
                            @Param("nickname") String nickname,
                            @Param("avatarUrl") String avatarUrl);
+
+    @Select({"<script>",
+        "select * from user_account where status=1 and role in",
+        "<foreach collection='roles' item='role' open='(' separator=',' close=')'>#{role}</foreach>",
+        "order by id asc",
+        "</script>"})
+    List<UserAccount> listActiveByRoles(@Param("roles") List<String> roles);
 }

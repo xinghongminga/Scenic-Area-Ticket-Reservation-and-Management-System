@@ -25,9 +25,12 @@ import java.util.UUID;
 public class FileUploadController {
 
     private final AliOssService aliOssService;
+    private final Path videoBaseDir;
 
-    public FileUploadController(AliOssService aliOssService) {
+    public FileUploadController(AliOssService aliOssService,
+                                @org.springframework.beans.factory.annotation.Value("${app.video-upload.base-dir:${user.home}/Desktop/毕业设计/video}") String videoBaseDir) {
         this.aliOssService = aliOssService;
+        this.videoBaseDir = Path.of(videoBaseDir);
     }
 
     @PostMapping("/image/upload")
@@ -50,8 +53,10 @@ public class FileUploadController {
         }
         try {
             LocalDate now = LocalDate.now();
-            Path base = Path.of(System.getProperty("user.home"), "scenic-spot", "videos",
-                String.valueOf(now.getYear()), String.format("%02d", now.getMonthValue()), String.format("%02d", now.getDayOfMonth()));
+            Path base = videoBaseDir
+                .resolve(String.valueOf(now.getYear()))
+                .resolve(String.format("%02d", now.getMonthValue()))
+                .resolve(String.format("%02d", now.getDayOfMonth()));
             Files.createDirectories(base);
             String ext = lower.substring(lower.lastIndexOf('.'));
             Path target = base.resolve(UUID.randomUUID().toString().replace("-", "") + ext);

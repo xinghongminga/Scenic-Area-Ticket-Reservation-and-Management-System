@@ -40,6 +40,19 @@ app:
   auth:
     token-ttl-seconds: 86400
     code-ttl-seconds: 300
+  order:
+    unpaid-ttl-minutes: 30
+  storage:
+    local-base-dir: ${LOCAL_STORAGE_DIR:${user.home}/scenic-spot/uploads}
+    public-base-url: ${LOCAL_PUBLIC_BASE_URL:http://localhost:8080/uploads}
+  video-upload:
+    base-dir: ${VIDEO_UPLOAD_DIR:${user.home}/Desktop/毕业设计/video}
+  video-detection:
+    enabled: ${VIDEO_DETECTION_ENABLED:false}
+    base-url: ${VIDEO_DETECTION_BASE_URL:http://127.0.0.1:5001}
+    timeout-ms: ${VIDEO_DETECTION_TIMEOUT_MS:600000}
+    frame-step: ${VIDEO_DETECTION_FRAME_STEP:10}
+    worker-threads: ${VIDEO_DETECTION_WORKER_THREADS:2}
   wechat:
     mini:
       app-id: ${WECHAT_MINI_APP_ID:}

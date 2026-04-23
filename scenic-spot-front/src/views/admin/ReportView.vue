@@ -3,14 +3,16 @@ import { reactive } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { BarChart, LineChart, PieChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent, TitleComponent, LegendComponent } from 'echarts/components';
+import { BarChart, LineChart, PieChart, HeatmapChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, TitleComponent, LegendComponent, VisualMapComponent } from 'echarts/components';
 import { download, request } from '../../api/http';
 import { ElMessage } from 'element-plus';
 
-use([CanvasRenderer, BarChart, LineChart, PieChart, GridComponent, TooltipComponent, TitleComponent, LegendComponent]);
+use([CanvasRenderer, BarChart, LineChart, PieChart, HeatmapChart, GridComponent, TooltipComponent, TitleComponent, LegendComponent, VisualMapComponent]);
 
-const form = reactive({ scenicId: 1, start: '2026-03-01 00:00:00', end: '2026-03-31 23:59:59' });
+const now = new Date();
+const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+const form = reactive({ scenicId: 1, range: [monthStart, now] });
 const state = reactive({
   sales: null,
   flow: null,
@@ -23,9 +25,42 @@ const state = reactive({
   showHeatmap: false
 });
 
+function pad(num) {
+  return String(num).padStart(2, '0');
+}
+
+function formatDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function disabledFutureDate(date) {
+  return date.getTime() > Date.now();
+}
+
+function getQueryRange() {
+  if (!form.range || form.range.length !== 2 || !form.range[0] || !form.range[1]) {
+    throw new Error('请选择开始和结束时间');
+  }
+  const startDate = new Date(form.range[0]);
+  const endDate = new Date(form.range[1]);
+  const nowDate = new Date();
+  if (startDate > endDate) {
+    throw new Error('开始时间不能晚于结束时间');
+  }
+  if (endDate > nowDate) {
+    throw new Error('结束时间不能超过当前时间');
+  }
+  return {
+    start: formatDateTime(startDate),
+    end: formatDateTime(endDate)
+  };
+}
+
 async function loadSales() {
   try {
-    state.sales = await request(`/api/analyst/report/sales?scenicId=${form.scenicId}&start=${encodeURIComponent(form.start)}&end=${encodeURIComponent(form.end)}`);
+    const range = getQueryRange();
+    state.sales = await request(`/api/analyst/report/sales?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     state.showSales = true;
     if (state.sales?.byTicket?.length) {
       const labels = state.sales.byTicket.map(d => d.ticketName || '未命名门票');
@@ -56,13 +91,14 @@ async function loadSales() {
     }
     ElMessage.success('销量报表加载成功');
   } catch (e) {
-    ElMessage.error('加载销量报表失败');
+    ElMessage.error(e.message || '加载销量报表失败');
   }
 }
 
 async function loadFlow() {
   try {
-    state.flow = await request(`/api/analyst/report/flow?scenicId=${form.scenicId}&start=${encodeURIComponent(form.start)}&end=${encodeURIComponent(form.end)}`);
+    const range = getQueryRange();
+    state.flow = await request(`/api/analyst/report/flow?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     state.showFlow = true;
     if (state.flow?.points?.length) {
       const times = state.flow.points.map(d => d.statMinute);
@@ -84,13 +120,14 @@ async function loadFlow() {
     }
     ElMessage.success('客流报表加载成功');
   } catch (e) {
-    ElMessage.error('加载客流报表失败');
+    ElMessage.error(e.message || '加载客流报表失败');
   }
 }
 
 async function loadHeatmap() {
   try {
-    state.heatmap = await request(`/api/analyst/report/heatmap?scenicId=${form.scenicId}&start=${encodeURIComponent(form.start)}&end=${encodeURIComponent(form.end)}`);
+    const range = getQueryRange();
+    state.heatmap = await request(`/api/analyst/report/heatmap?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     state.showHeatmap = true;
     if (state.heatmap?.points?.length) {
       const areas = [...new Set(state.heatmap.points.map(d => d.areaCode || '未分类'))];
@@ -115,7 +152,7 @@ async function loadHeatmap() {
     }
     ElMessage.success('热力图加载成功');
   } catch (e) {
-    ElMessage.error('加载热力图失败');
+    ElMessage.error(e.message || '加载热力图失败');
   }
 }
 
@@ -129,21 +166,23 @@ function saveBlob(blob, filename) {
 
 async function exportSales() {
   try {
-    const blob = await download(`/api/analyst/report/sales/export?scenicId=${form.scenicId}&start=${encodeURIComponent(form.start)}&end=${encodeURIComponent(form.end)}`);
+    const range = getQueryRange();
+    const blob = await download(`/api/analyst/report/sales/export?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     saveBlob(blob, 'sales_report.csv');
     ElMessage.success('导出成功');
   } catch (e) {
-    ElMessage.error('导出失败');
+    ElMessage.error(e.message || '导出失败');
   }
 }
 
 async function exportFlow() {
   try {
-    const blob = await download(`/api/analyst/report/flow/export?scenicId=${form.scenicId}&start=${encodeURIComponent(form.start)}&end=${encodeURIComponent(form.end)}`);
+    const range = getQueryRange();
+    const blob = await download(`/api/analyst/report/flow/export?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     saveBlob(blob, 'flow_report.csv');
     ElMessage.success('导出成功');
   } catch (e) {
-    ElMessage.error('导出失败');
+    ElMessage.error(e.message || '导出失败');
   }
 }
 
@@ -167,8 +206,15 @@ function closePanel(panel) {
     <h3>分析报表</h3>
     <div class="toolbar">
       <el-input-number v-model.number="form.scenicId" :min="1" placeholder="景区ID" />
-      <el-input v-model="form.start" placeholder="开始 yyyy-MM-dd HH:mm:ss" />
-      <el-input v-model="form.end" placeholder="结束 yyyy-MM-dd HH:mm:ss" />
+      <el-date-picker
+        v-model="form.range"
+        type="datetimerange"
+        range-separator="至"
+        start-placeholder="开始时间"
+        end-placeholder="结束时间"
+        format="YYYY-MM-DD HH:mm:ss"
+        :disabled-date="disabledFutureDate"
+      />
       <el-button @click="loadSales" type="primary">销量</el-button>
       <el-button @click="loadFlow" type="primary">客流</el-button>
       <el-button @click="loadHeatmap" type="primary">热力</el-button>

@@ -1,21 +1,37 @@
 package com.example.scencispotback.config;
 
 import com.example.scencispotback.domain.AftersaleRequest;
+import com.example.scencispotback.mapper.TicketOrderMapper;
 import com.example.scencispotback.mapper.AftersaleRequestMapper;
+import com.example.scencispotback.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableScheduling
 public class ScheduleConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(ScheduleConfig.class);
+
     @Autowired
     private AftersaleRequestMapper aftersaleRequestMapper;
+
+    @Autowired
+    private TicketOrderMapper ticketOrderMapper;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Value("${app.order.unpaid-ttl-minutes:30}")
+    private long unpaidTtlMinutes;
 
     /**
      * 每30分钟检查一次待处理售后申请。
@@ -46,10 +62,14 @@ public class ScheduleConfig {
     @Scheduled(cron = "0 0 2 * * *")
     public void markExpiredOrders() {
         try {
-            // 预留：后续可在此扩展“逾期未核销订单”自动处理逻辑。
-            LocalDateTime ignored = LocalDateTime.now().minusDays(1);
-            if (ignored.getYear() < 0) {
-                return;
+            LocalDateTime cutoff = LocalDateTime.now().minusMinutes(unpaidTtlMinutes);
+            List<Long> expiredIds = ticketOrderMapper.findExpiredUnpaidIds(cutoff);
+            for (Long orderId : expiredIds) {
+                try {
+                    orderService.closeExpiredUnpaidOrder(orderId);
+                } catch (Exception ex) {
+                    log.warn("Failed to close expired unpaid order id={}", orderId, ex);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

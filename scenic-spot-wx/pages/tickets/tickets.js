@@ -122,6 +122,7 @@ Page({
         tickets: (list || []).map(i => ({
           ...i,
           imageUrl: i.imageUrl || '',
+          projectNames: i.projectNames || '未关联景区项目',
           qty: 1,
           qtyText: '1',
           ticketTypeText: this.formatTicketType(i.ticketType),
@@ -160,8 +161,17 @@ Page({
   // 下单并支付：先选场次创建订单，再根据用户确认决定立即支付或稍后支付
   async createOrder(e) {
     const id = Number(e.currentTarget.dataset.id);
+    if (this.data.processingTicketId === id) {
+      return;
+    }
+
+    this.setData({ processingTicketId: id });
+
     const item = this.data.tickets.find(t => t.id === id);
-    if (!item) return;
+    if (!item) {
+      this.setData({ processingTicketId: null });
+      return;
+    }
     try {
       const inv = await request(`/api/tickets/${id}/inventory?date=${this.data.visitDate}`);
       if (!inv || !inv.length) throw new Error('没有可用时段库存');
@@ -174,7 +184,10 @@ Page({
         itemList: labels,
         success: async (sel) => {
           const chosen = available[sel.tapIndex];
-          if (!chosen) return;
+          if (!chosen) {
+            this.setData({ processingTicketId: null });
+            return;
+          }
           try {
             // 第二步：创建订单（状态通常为待支付）
             const order = await request('/api/orders', 'POST', {
@@ -194,7 +207,6 @@ Page({
               success: async (res) => {
                 if (res.confirm) {
                   try {
-                    this.setData({ processingTicketId: id });
                     wx.showLoading({ title: '正在支付...' });
 
                     // 第四步：发起支付，成功后写入闪存通知并跳转我的页面
@@ -218,12 +230,17 @@ Page({
                 // 用户选择稍后支付：保留待支付订单并提示
                 wx.showToast({ title: '订单已创建，待支付', icon: 'none' });
                 await this.refreshTicketInventory(id, false);
+                this.setData({ processingTicketId: null });
                 wx.switchTab({ url: '/pages/mine/mine' });
               }
             });
           } catch (createErr) {
             wx.showToast({ title: createErr.message, icon: 'none' });
+            this.setData({ processingTicketId: null });
           }
+        },
+        fail: () => {
+          this.setData({ processingTicketId: null });
         }
       });
     } catch (err) {

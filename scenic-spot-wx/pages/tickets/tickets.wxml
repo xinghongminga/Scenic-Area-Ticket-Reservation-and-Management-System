@@ -17,6 +17,7 @@
     <view class="meta">
       <view class="name">{{item.name}}</view>
       <view class="sub">{{item.ticketTypeText}} | 有效期 {{item.validFrom}} 至 {{item.validTo}}</view>
+      <view class="sub">景区项目：{{item.projectNames}}</view>
       <view class="sub">可预订场次：{{item.slotHint}}</view>
       <view class="sub">上午库存：{{item.morningRemain === null ? '-' : item.morningRemain}}</view>
       <view class="sub">下午库存：{{item.afternoonRemain === null ? '-' : item.afternoonRemain}}</view>
@@ -26,7 +27,7 @@
       </view>
       <view class="action-row">
         <button class="btn ghost" data-id="{{item.id}}" bindtap="loadInventory">查库存</button>
-        <button class="btn" data-id="{{item.id}}" bindtap="createOrder" loading="{{processingTicketId===item.id}}" disabled="{{processingTicketId===item.id}}">{{processingTicketId===item.id ? '支付中...' : '立即预订'}}</button>
+        <button class="btn" data-id="{{item.id}}" bindtap="createOrder" loading="{{processingTicketId===item.id}}" disabled="{{processingTicketId===item.id}}">{{processingTicketId===item.id ? '提交中...' : '立即预订'}}</button>
       </view>
       <view wx:if="{{item.inventoryText}}" class="inventory">{{item.inventoryText}}</view>
     </view>

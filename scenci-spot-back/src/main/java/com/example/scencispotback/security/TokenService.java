@@ -21,7 +21,7 @@ public class TokenService {
                         ObjectMapper objectMapper,
                         @Value("${app.auth.token-ttl-seconds}") long tokenTtlSeconds) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
+         this.objectMapper = objectMapper;
         this.tokenTtlSeconds = tokenTtlSeconds;
     }
 

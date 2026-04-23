@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 import { request } from '../api/http';
 import { ElMessage } from 'element-plus';
 
@@ -9,17 +9,29 @@ const state = reactive({
   unreadCount: 0,
   loading: false
 });
+let pollTimer = null;
 
-async function loadNotifications() {
+async function loadUnreadCount(silent = true) {
+  try {
+    const countData = await request('/api/user/notifications/unread-count');
+    state.unreadCount = countData?.unreadCount || 0;
+  } catch (e) {
+    if (!silent) {
+      ElMessage.error(e.message || '加载通知失败');
+    }
+  }
+}
+
+async function loadNotifications(showError = true) {
   try {
     state.loading = true;
     const data = await request('/api/user/notifications');
-    state.notifications = data;
-    
-    const countData = await request('/api/user/notifications/unread-count');
-    state.unreadCount = countData.unreadCount || 0;
+    state.notifications = Array.isArray(data) ? data : [];
+    await loadUnreadCount(true);
   } catch (e) {
-    ElMessage.error('加载通知失败');
+    if (showError) {
+      ElMessage.error(e.message || '加载通知失败');
+    }
   } finally {
     state.loading = false;
   }
@@ -62,15 +74,20 @@ function getTagType(ntype) {
 
 function openNotificationCenter() {
   visible.value = true;
-  loadNotifications();
+  loadNotifications(true);
 }
 
 onMounted(() => {
-  // 初始化时加载未读数量
-  loadNotifications();
-  
-  // 每30秒刷新一次
-  setInterval(loadNotifications, 30000);
+  // 后台轮询仅刷新未读数量，避免接口异常时反复打断用户。
+  loadUnreadCount(true);
+  pollTimer = setInterval(() => loadUnreadCount(true), 30000);
+});
+
+onBeforeUnmount(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
 });
 </script>
 

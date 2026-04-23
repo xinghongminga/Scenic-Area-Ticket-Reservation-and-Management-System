@@ -7,5 +7,7 @@ public class VerifyDto {
 
     public record VerifyByQrReq(@NotBlank String qrCode, String method) {}
 
+    public record VerifyByQrImageReq(String method) {}
+
     public record VerifyResp(String orderNo, String ticketStatus, String orderStatus) {}
 }

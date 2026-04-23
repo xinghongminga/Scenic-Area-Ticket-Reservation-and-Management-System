@@ -14,10 +14,14 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.example.scencispotback.mapper.*;
 import com.example.scencispotback.security.UserContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +34,8 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
     private final TicketMapper ticketMapper;
     private final TicketInventoryMapper inventoryMapper;
     private final TicketOrderMapper orderMapper;
@@ -38,6 +44,8 @@ public class OrderService {
     private final OrderTicketMapper orderTicketMapper;
     private final OrderStatusLogService orderStatusLogService;
     private final NotificationService notificationService;
+    private final InventoryOptimisticService inventoryOptimisticService;
+    private final long unpaidTtlMinutes;
 
     public OrderService(TicketMapper ticketMapper,
                         TicketInventoryMapper inventoryMapper,
@@ -46,7 +54,9 @@ public class OrderService {
                         PaymentMapper paymentMapper,
                         OrderTicketMapper orderTicketMapper,
                         OrderStatusLogService orderStatusLogService,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        InventoryOptimisticService inventoryOptimisticService,
+                        @Value("${app.order.unpaid-ttl-minutes:30}") long unpaidTtlMinutes) {
         this.ticketMapper = ticketMapper;
         this.inventoryMapper = inventoryMapper;
         this.orderMapper = orderMapper;
@@ -55,10 +65,12 @@ public class OrderService {
         this.orderTicketMapper = orderTicketMapper;
         this.orderStatusLogService = orderStatusLogService;
         this.notificationService = notificationService;
+        this.inventoryOptimisticService = inventoryOptimisticService;
+        this.unpaidTtlMinutes = unpaidTtlMinutes;
     }
 
     /**
-     * 创建订单：校验门票 → 锁定库存 → 生成未支付订单
+     * 创建订单：Redis 原子预扣库存 + DB 条件更新 + 生成未支付订单
      */
     @Transactional
     public OrderDto.CreateOrderResp create(OrderDto.CreateOrderReq req) {
@@ -68,42 +80,58 @@ public class OrderService {
             throw new BizException("门票不存在或未上架");
         }
 
-        // 悲观锁查询库存，防止并发超卖
-        TicketInventoryRow inv = inventoryMapper.lockOne(req.ticketId(), req.visitDate(), req.timeslotId());
-        if (inv == null) {
+        TicketInventoryRow inv = inventoryMapper.findOne(req.ticketId(), req.visitDate(), req.timeslotId());
+        if (inv == null || inv.getStatus() == null || inv.getStatus() != 1) {
             throw new BizException("该日期时段暂无库存");
         }
 
-        int remain = inv.getTotalQty() - inv.getSoldQty() - inv.getLockedQty();
-        if (remain < req.qty()) {
+        boolean redisReserved = inventoryOptimisticService.reserve(
+            req.ticketId(), req.visitDate(), req.timeslotId(), req.qty(), inv
+        );
+        if (!redisReserved) {
             throw new BizException("库存不足");
         }
-        inventoryMapper.addLocked(inv.getId(), req.qty());
 
-        // 计算总价并创建订单
-        int amount = ticket.getPriceCent() * req.qty();
-        TicketOrder order = new TicketOrder();
-        order.setOrderNo(genOrderNo());
-        order.setScenicId(ticket.getScenicId());
-        order.setUserId(userId);
-        order.setVisitDate(req.visitDate());
-        order.setTimeslotId(req.timeslotId());
-        order.setTotalAmountCent(amount);
-        order.setStatus("UNPAID");
-        orderMapper.insert(order);
+        boolean needCompensate = true;
 
-        // 插入订单明细
-        TicketOrderItem item = new TicketOrderItem();
-        item.setOrderId(order.getId());
-        item.setTicketId(ticket.getId());
-        item.setTicketName(ticket.getName());
-        item.setUnitPriceCent(ticket.getPriceCent());
-        item.setQty(req.qty());
-        item.setAmountCent(amount);
-        orderItemMapper.insert(item);
+        try {
+            int dbUpdated = inventoryMapper.tryAddLocked(req.ticketId(), req.visitDate(), req.timeslotId(), req.qty());
+            if (dbUpdated == 0) {
+                inventoryOptimisticService.release(req.ticketId(), req.visitDate(), req.timeslotId(), req.qty());
+                needCompensate = false;
+                throw new BizException("库存不足");
+            }
 
-        orderStatusLogService.write(order.getId(), null, "UNPAID", "USER", "{\"action\":\"create\"}");
-        return new OrderDto.CreateOrderResp(order.getOrderNo(), amount, order.getStatus());
+            int amount = ticket.getPriceCent() * req.qty();
+            TicketOrder order = new TicketOrder();
+            order.setOrderNo(genOrderNo());
+            order.setScenicId(ticket.getScenicId());
+            order.setUserId(userId);
+            order.setVisitDate(req.visitDate());
+            order.setTimeslotId(req.timeslotId());
+            order.setTotalAmountCent(amount);
+            order.setStatus("UNPAID");
+            order.setCloseReason(null);
+            orderMapper.insert(order);
+
+            TicketOrderItem item = new TicketOrderItem();
+            item.setOrderId(order.getId());
+            item.setTicketId(ticket.getId());
+            item.setTicketName(ticket.getName());
+            item.setUnitPriceCent(ticket.getPriceCent());
+            item.setQty(req.qty());
+            item.setAmountCent(amount);
+            orderItemMapper.insert(item);
+
+            orderStatusLogService.write(order.getId(), null, "UNPAID", "USER", "{\"action\":\"create\"}");
+            needCompensate = false;
+            return new OrderDto.CreateOrderResp(order.getOrderNo(), amount, order.getStatus());
+        } catch (RuntimeException e) {
+            if (needCompensate) {
+                inventoryOptimisticService.release(req.ticketId(), req.visitDate(), req.timeslotId(), req.qty());
+            }
+            throw e;
+        }
     }
 
     /**
@@ -111,7 +139,7 @@ public class OrderService {
      */
     @Transactional
     public OrderDto.PayResp pay(String orderNo) {
-        TicketOrder order = orderMapper.findByOrderNo(orderNo);
+        TicketOrder order = orderMapper.findByOrderNoForUpdate(orderNo);
         if (order == null) {
             throw new BizException("订单不存在");
         }
@@ -125,18 +153,23 @@ public class OrderService {
             throw new BizException("订单状态不允许支付");
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        if (isExpired(order, now)) {
+            closeExpiredUnpaidOrderLocked(order, now);
+            throw new BizException("订单已超时关闭");
+        }
+
         List<TicketOrderItem> items = orderItemMapper.listByOrderId(order.getId());
         if (items.isEmpty()) {
             throw new BizException("订单明细不存在");
         }
 
-        // 库存校验并正式扣减
+        // 订单支付只需要把已锁库存转已售，不再走行级悲观锁
         TicketOrderItem first = items.get(0);
-        TicketInventoryRow inv = inventoryMapper.lockOne(first.getTicketId(), order.getVisitDate(), order.getTimeslotId());
-        if (inv == null || inv.getLockedQty() < first.getQty()) {
+        int moved = inventoryMapper.tryLockToSold(first.getTicketId(), order.getVisitDate(), order.getTimeslotId(), first.getQty());
+        if (moved == 0) {
             throw new BizException("库存锁定异常");
         }
-        inventoryMapper.lockToSold(inv.getId(), first.getQty());
 
         // 模拟支付记录
         String payNo = "PAY" + System.currentTimeMillis();
@@ -240,19 +273,38 @@ public class OrderService {
             throw new BizException("已核销订单不允许删除");
         }
 
-        // 未支付订单释放锁定库存
+        // 未支付订单释放锁定库存，并归还 Redis 可售余量
         if ("UNPAID".equals(order.getStatus())) {
             List<TicketOrderItem> items = orderItemMapper.listByOrderId(order.getId());
             for (TicketOrderItem item : items) {
-                TicketInventoryRow inv = inventoryMapper.lockOne(item.getTicketId(), order.getVisitDate(), order.getTimeslotId());
-                if (inv != null && inv.getLockedQty() > 0) {
-                    inventoryMapper.subLocked(inv.getId(), Math.min(inv.getLockedQty(), item.getQty()));
+                int released = inventoryMapper.trySubLocked(item.getTicketId(), order.getVisitDate(), order.getTimeslotId(), item.getQty());
+                if (released == 0) {
+                    throw new BizException("库存释放异常");
                 }
+                inventoryOptimisticService.release(item.getTicketId(), order.getVisitDate(), order.getTimeslotId(), item.getQty());
             }
         }
 
         orderMapper.updateStatus(order.getId(), "DELETED");
         orderStatusLogService.write(order.getId(), order.getStatus(), "DELETED", "USER", "{\"action\":\"delete\"}");
+    }
+
+    /**
+     * 定时任务调用：关闭已超时未支付订单，并归还库存。
+     */
+    @Transactional
+    public boolean closeExpiredUnpaidOrder(Long orderId) {
+        TicketOrder order = orderMapper.findByIdForUpdate(orderId);
+        if (order == null || !"UNPAID".equals(order.getStatus())) {
+            return false;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!isExpired(order, now)) {
+            return false;
+        }
+
+        return closeExpiredUnpaidOrderLocked(order, now);
     }
 
     /**
@@ -316,6 +368,33 @@ public class OrderService {
     private String csv(String val) {
         if (val == null) return "";
         return "\"" + val.replace("\"", "\"\"") + "\"";
+    }
+
+    private boolean isExpired(TicketOrder order, LocalDateTime now) {
+        if (order == null || order.getCreatedAt() == null) {
+            return false;
+        }
+        return !order.getCreatedAt().plusMinutes(unpaidTtlMinutes).isAfter(now);
+    }
+
+    private boolean closeExpiredUnpaidOrderLocked(TicketOrder order, LocalDateTime now) {
+        if (order == null || !"UNPAID".equals(order.getStatus()) || !isExpired(order, now)) {
+            return false;
+        }
+
+        List<TicketOrderItem> items = orderItemMapper.listByOrderId(order.getId());
+        for (TicketOrderItem item : items) {
+            int released = inventoryMapper.trySubLocked(item.getTicketId(), order.getVisitDate(), order.getTimeslotId(), item.getQty());
+            if (released == 0) {
+                throw new BizException("库存释放异常");
+            }
+            inventoryOptimisticService.release(item.getTicketId(), order.getVisitDate(), order.getTimeslotId(), item.getQty());
+        }
+
+        orderMapper.updateStatusAndReason(order.getId(), "EXPIRED", "TIMEOUT");
+        orderStatusLogService.write(order.getId(), "UNPAID", "EXPIRED", "SYSTEM", "{\"action\":\"timeout_close\",\"ttlMinutes\":" + unpaidTtlMinutes + "}");
+        log.info("Expired unpaid order closed: orderNo={}, orderId={}", order.getOrderNo(), order.getId());
+        return true;
     }
 
     /**

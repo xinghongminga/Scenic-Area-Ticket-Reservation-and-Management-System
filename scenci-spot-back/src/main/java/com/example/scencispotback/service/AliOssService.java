@@ -1,15 +1,15 @@
 package com.example.scencispotback.service;
 
-import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.model.ObjectMetadata;
 import com.example.scencispotback.common.BizException;
-import com.example.scencispotback.config.AliOssProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.UUID;
@@ -17,10 +17,13 @@ import java.util.UUID;
 @Service
 public class AliOssService {
 
-    private final AliOssProperties aliOssProperties;
+    private final String localBaseDir;
+    private final String publicBaseUrl;
 
-    public AliOssService(AliOssProperties aliOssProperties) {
-        this.aliOssProperties = aliOssProperties;
+    public AliOssService(@Value("${app.storage.local-base-dir:${user.home}/scenic-spot/uploads}") String localBaseDir,
+                         @Value("${app.storage.public-base-url:http://localhost:8080/uploads}") String publicBaseUrl) {
+        this.localBaseDir = localBaseDir;
+        this.publicBaseUrl = publicBaseUrl;
     }
 
     public String uploadImage(MultipartFile file) {
@@ -35,49 +38,22 @@ public class AliOssService {
             throw new BizException("仅支持图片文件上传");
         }
 
-        // 上传前校验 OSS 关键配置
-        validateOssConfig();
-
         // 生成按日期分层的对象 Key，便于后续按目录管理
         String objectKey = buildObjectKey(file.getOriginalFilename());
+        Path target = Path.of(localBaseDir, objectKey).toAbsolutePath().normalize();
 
-        // 根据配置构建 OSS 客户端实例
-        OSS ossClient = new OSSClientBuilder().build(
-            aliOssProperties.getEndpoint(),
-            aliOssProperties.getAccessKeyId(),
-            aliOssProperties.getAccessKeySecret()
-        );
-
-        // 上传对象并返回可直接访问的公网 URL
+        // 写入本地文件系统并返回可直接访问 URL
         try (InputStream inputStream = file.getInputStream()) {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(contentType);
-            metadata.setContentLength(file.getSize());
-            ossClient.putObject(aliOssProperties.getBucketName(), objectKey, inputStream, metadata);
-            return "https://" + aliOssProperties.getBucketName() + "." + aliOssProperties.getEndpoint() + "/" + objectKey;
+            Files.createDirectories(target.getParent());
+            Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+            return joinUrl(publicBaseUrl, objectKey);
         } catch (IOException e) {
             // 读取上传流失败
             throw new BizException("读取上传文件失败: " + e.getMessage());
         } catch (Exception e) {
-            // OSS SDK 调用失败
-            throw new BizException("上传到阿里云OSS失败: " + e.getMessage());
-        } finally {
-            // 及时释放客户端资源
-            ossClient.shutdown();
+            // 本地存储调用失败
+            throw new BizException("保存本地图片失败: " + e.getMessage());
         }
-    }
-
-    private void validateOssConfig() {
-        if (isBlank(aliOssProperties.getEndpoint())
-            || isBlank(aliOssProperties.getAccessKeyId())
-            || isBlank(aliOssProperties.getAccessKeySecret())
-            || isBlank(aliOssProperties.getBucketName())) {
-            throw new BizException("OSS配置不完整，请检查配置或启用dev配置");
-        }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 
     private String buildObjectKey(String originalFilename) {
@@ -86,12 +62,17 @@ public class AliOssService {
             ext = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
         }
         LocalDate now = LocalDate.now();
-        return "scenic-spot/"
+        return "images/"
             + now.getYear() + "/"
             + String.format("%02d", now.getMonthValue()) + "/"
             + String.format("%02d", now.getDayOfMonth()) + "/"
             + UUID.randomUUID().toString().replace("-", "")
             + "."
             + ext;
+    }
+
+    private String joinUrl(String base, String key) {
+        String normalizedBase = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+        return normalizedBase + "/" + key.replace('\\', '/');
     }
 }

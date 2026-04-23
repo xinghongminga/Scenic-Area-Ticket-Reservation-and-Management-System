@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { onMounted, reactive, computed, ref } from 'vue';
+import { onMounted, onBeforeUnmount, reactive, computed, ref } from 'vue';
 import { request } from '../../api/http';
 import { ElMessage } from 'element-plus';
 
@@ -9,6 +9,7 @@ const state = reactive({ list: [], running: null, deleting: null, uploading: '' 
 const pager = reactive({ enterPage: 1, enterPageSize: 10, exitPage: 1, exitPageSize: 10 });
 const enterFileRef = ref(null);
 const exitFileRef = ref(null);
+const pollingJobs = new Map();
 
 async function load() {
   state.list = await request('/api/admin/video-jobs');
@@ -60,13 +61,54 @@ async function onPickFile(e, direction) {
 async function runJob(id) {
   state.running = id;
   try {
-    const res = await request(`/api/admin/video-jobs/${id}/run`, { method: 'POST' });
-    ElMessage.success(`执行成功，写入 ${res.pointsWritten} 条样本，${res.minutesAggregated} 分钟`);
+    await request(`/api/admin/video-jobs/${id}/run`, { method: 'POST', timeoutMs: 30 * 1000 });
+    ElMessage.success('任务已提交，后台正在执行');
+    startPollingJob(id);
   } catch (e) {
     ElMessage.error(e.message || '执行失败');
   } finally {
     state.running = null;
     await load();
+  }
+}
+
+function startPollingJob(id) {
+  if (pollingJobs.has(id)) return;
+  const startedAt = Date.now();
+  const timer = setInterval(async () => {
+    try {
+      await load();
+      const job = state.list.find((j) => j.id === id);
+      if (!job) {
+        clearPollingJob(id);
+        return;
+      }
+      if (job.status === 'SUCCESS') {
+        ElMessage.success(`任务 ${id} 执行完成`);
+        clearPollingJob(id);
+        return;
+      }
+      if (job.status === 'FAILED') {
+        ElMessage.error(job.errorMsg || `任务 ${id} 执行失败`);
+        clearPollingJob(id);
+        return;
+      }
+      if (Date.now() - startedAt > 20 * 60 * 1000) {
+        ElMessage.warning(`任务 ${id} 轮询超时，请稍后手动刷新查看状态`);
+        clearPollingJob(id);
+      }
+    } catch {
+      // Ignore transient polling errors; next round will retry.
+    }
+  }, 3000);
+  pollingJobs.set(id, timer);
+}
+
+function clearPollingJob(id) {
+  const timer = pollingJobs.get(id);
+  if (timer) {
+    clearInterval(timer);
+    pollingJobs.delete(id);
   }
 }
 
@@ -97,14 +139,19 @@ const pagedExitJobs = computed(() => {
 });
 
 onMounted(load);
+
+onBeforeUnmount(() => {
+  pollingJobs.forEach((timer) => clearInterval(timer));
+  pollingJobs.clear();
+});
 </script>
 
 <template>
   <div class="page">
     <el-card shadow="never" class="module-card">
       <template #header>
-        <span class="module-title enter">入园人头计数</span>
-        <span class="module-desc">检测到入园人头时，入园累计 +1，在园人数 +1</span>
+        <span class="module-title enter">入园计数</span>
+        <span class="module-desc">检测到游客入园时，入园累计 +1，在园人数 +1</span>
       </template>
 
       <div class="form-row">
@@ -122,6 +169,7 @@ onMounted(load);
         <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
         <el-table-column prop="areaCode" label="区域" width="100" align="center" />
         <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
+        <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
@@ -148,8 +196,8 @@ onMounted(load);
 
     <el-card shadow="never" class="module-card">
       <template #header>
-        <span class="module-title exit">出园人头计数</span>
-        <span class="module-desc">检测到出园人头时，在园人数 -1，出园累计 +1</span>
+        <span class="module-title exit">出园计数</span>
+        <span class="module-desc">检测到游客出园时，在园人数 -1，出园累计 +1</span>
       </template>
 
       <div class="form-row">
@@ -167,6 +215,7 @@ onMounted(load);
         <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
         <el-table-column prop="areaCode" label="区域" width="100" align="center" />
         <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
+        <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
