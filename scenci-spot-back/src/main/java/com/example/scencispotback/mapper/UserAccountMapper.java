@@ -66,6 +66,12 @@ public interface UserAccountMapper {
                            @Param("nickname") String nickname,
                            @Param("avatarUrl") String avatarUrl);
 
+    @Update("update user_account set nickname=#{nickname}, avatar_url=#{avatarUrl}, phone=#{phone}, updated_at=now() where id=#{id}")
+    int updateMyProfile(@Param("id") Long id,
+                        @Param("nickname") String nickname,
+                        @Param("avatarUrl") String avatarUrl,
+                        @Param("phone") String phone);
+
     @Select({"<script>",
         "select * from user_account where status=1 and role in",
         "<foreach collection='roles' item='role' open='(' separator=',' close=')'>#{role}</foreach>",

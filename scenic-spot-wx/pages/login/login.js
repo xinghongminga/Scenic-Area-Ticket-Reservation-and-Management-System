@@ -1,6 +1,10 @@
 const { request } = require('../../utils/request');
 const app = getApp();
 
+// 基本校验正则（非完全实名验证，但覆盖常见格式）
+const PHONE_RE = /^\s*1\d{10}\s*$/;
+const IDCARD_RE = /^(?:\d{15}|\d{17}[\dXx])$/;
+
 Page({
   oauthLock: false,
   data: {
@@ -29,6 +33,10 @@ Page({
   nextRegisterStep() {
     if (!this.data.phone) {
       wx.showToast({ title: '请输入手机号', icon: 'none' });
+      return;
+    }
+    if (!PHONE_RE.test(this.data.phone)) {
+      wx.showToast({ title: '请输入有效手机号', icon: 'none' });
       return;
     }
     if (!this.data.code) {
@@ -82,6 +90,12 @@ Page({
       }
       if (this.data.mode === 'register' && !this.data.idCardNo) {
         throw new Error('请输入身份证号');
+      }
+      if (this.data.mode === 'register' && !PHONE_RE.test(this.data.phone)) {
+        throw new Error('请输入有效手机号');
+      }
+      if (this.data.mode === 'register' && !IDCARD_RE.test(this.data.idCardNo)) {
+        throw new Error('请输入有效身份证号');
       }
       if (this.data.mode === 'register' && !this.data.password) {
         throw new Error('注册请设置密码');

@@ -1,9 +1,11 @@
-const { request } = require('../../utils/request');
+const { request, normalizeImageUrl } = require('../../utils/request');
 const { pushFlashNotice } = require('../../utils/notice');
 
 Page({
   data: {
     visitDate: '',
+    minVisitDate: '',
+    maxVisitDate: '',
     keyword: '',
     searchKeyword: '',
     defaultTicketImage: 'https://via.placeholder.com/300x300.png?text=Ticket',
@@ -79,18 +81,37 @@ Page({
       wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
-    if (!this.data.visitDate) {
-      const d = new Date();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      this.setData({ visitDate: `${d.getFullYear()}-${m}-${day}` });
-    }
+    this.ensureDateRange();
     this.loadTickets();
+  },
+
+  formatDate(d) {
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+  },
+
+  ensureDateRange() {
+    const today = new Date();
+    const max = new Date(today.getTime());
+    max.setDate(max.getDate() + 13);
+    const minVisitDate = this.formatDate(today);
+    const maxVisitDate = this.formatDate(max);
+    let visitDate = this.data.visitDate || minVisitDate;
+    if (visitDate < minVisitDate || visitDate > maxVisitDate) {
+      visitDate = minVisitDate;
+    }
+    this.setData({ minVisitDate, maxVisitDate, visitDate });
   },
 
   // 切换出行日期后重新拉取门票及对应库存
   onDateChange(e) {
-    this.setData({ visitDate: e.detail.value });
+    const nextDate = e.detail.value;
+    if (nextDate < this.data.minVisitDate || nextDate > this.data.maxVisitDate) {
+      wx.showToast({ title: '仅支持选择未来14天内日期', icon: 'none' });
+      return;
+    }
+    this.setData({ visitDate: nextDate });
     this.loadTickets();
   },
 
@@ -115,13 +136,13 @@ Page({
   async loadTickets() {
     try {
       const query = this.data.searchKeyword
-        ? `/api/tickets?scenicId=1&keyword=${encodeURIComponent(this.data.searchKeyword)}`
-        : '/api/tickets?scenicId=1';
+        ? `/api/tickets?scenicId=1&date=${this.data.visitDate}&keyword=${encodeURIComponent(this.data.searchKeyword)}`
+        : `/api/tickets?scenicId=1&date=${this.data.visitDate}`;
       const list = await request(query);
       this.setData({
         tickets: (list || []).map(i => ({
           ...i,
-          imageUrl: i.imageUrl || '',
+          imageUrl: normalizeImageUrl(i.imageUrl || ''),
           projectNames: i.projectNames || '未关联景区项目',
           qty: 1,
           qtyText: '1',

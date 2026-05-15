@@ -112,7 +112,7 @@ load();
       <el-button @click="openCreate" type="primary">+ 鍒涘缓鍛樺伐</el-button>
     </div>
 
-    <el-table :data="pagedList" stripe border>
+    <el-table :data="pagedList" stripe border class="data-table">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="nickname" label="濮撳悕" width="100" />
       <el-table-column prop="phone" label="鐢佃瘽" width="120" />
@@ -174,8 +174,9 @@ load();
 <style scoped>
 .card {
   background: #fff;
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 .header {
   display: flex;
@@ -185,7 +186,37 @@ load();
 }
 h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.data-table {
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 15px;
+}
+.data-table :deep(th.el-table__cell) {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 600;
+}
+.data-table :deep(td.el-table__cell) {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.data-table :deep(.cell) {
+  line-height: 1.5;
+}
+.data-table :deep(.el-table__body tr:hover > td) {
+  background: #f7faff;
+}
+.data-table :deep(.el-tag) {
+  border-radius: 999px;
+  padding: 0 10px;
+  height: 26px;
+  line-height: 24px;
+  font-size: 13px;
 }
 .pager { display: flex; justify-content: center; margin-top: 12px; }
 </style>

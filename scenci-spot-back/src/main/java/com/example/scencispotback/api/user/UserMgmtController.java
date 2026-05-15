@@ -66,7 +66,7 @@ public class UserMgmtController {
     @PutMapping("/api/user/profile")
     public ApiResponse<Void> updateMyProfile(@RequestBody Map<String, String> body) {
         Authz.requireRole("TOURIST", "ADMIN", "ANALYST", "AUDITOR");
-        userMgmtService.updateMyProfile(body.get("nickname"));
+        userMgmtService.updateMyProfile(body.get("nickname"), body.get("avatarUrl"), body.get("phone"));
         return ApiResponse.ok(null);
     }
 

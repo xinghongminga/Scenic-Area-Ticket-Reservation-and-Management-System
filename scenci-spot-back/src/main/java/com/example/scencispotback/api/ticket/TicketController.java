@@ -32,8 +32,9 @@ public class TicketController {
                                                             @RequestParam(required = false) String ticketType,
                                                             @RequestParam(required = false) Integer priceMin,
                                                             @RequestParam(required = false) Integer priceMax,
-                                                            @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(ticketService.list(new TicketDto.TicketQuery(scenicId, ticketType, priceMin, priceMax, keyword), true));
+                                                            @RequestParam(required = false) String keyword,
+                                                            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        return ApiResponse.ok(ticketService.list(new TicketDto.TicketQuery(scenicId, ticketType, priceMin, priceMax, keyword, date), true));
     }
 
     /**
@@ -44,9 +45,10 @@ public class TicketController {
                                                                  @RequestParam(required = false) String ticketType,
                                                                  @RequestParam(required = false) Integer priceMin,
                                                                  @RequestParam(required = false) Integer priceMax,
-                                                                 @RequestParam(required = false) String keyword) {
+                                                                 @RequestParam(required = false) String keyword,
+                                                                 @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
         Authz.requireRole("ADMIN");
-        return ApiResponse.ok(ticketService.list(new TicketDto.TicketQuery(scenicId, ticketType, priceMin, priceMax, keyword), false));
+        return ApiResponse.ok(ticketService.list(new TicketDto.TicketQuery(scenicId, ticketType, priceMin, priceMax, keyword, date), false));
     }
 
     /**

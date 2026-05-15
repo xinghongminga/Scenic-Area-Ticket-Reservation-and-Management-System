@@ -9,7 +9,7 @@ import java.util.List;
 
 public class TicketDto {
 
-    public record TicketQuery(Long scenicId, String ticketType, Integer priceMin, Integer priceMax, String keyword) {}
+    public record TicketQuery(Long scenicId, String ticketType, Integer priceMin, Integer priceMax, String keyword, LocalDate visitDate) {}
 
     public record InventoryResp(Long timeslotId, String timeslotName, Integer totalQty, Integer soldQty, Integer lockedQty, Integer remainQty) {}
 
@@ -24,8 +24,7 @@ public class TicketDto {
                                        @Min(0) Integer afternoonStockQty,
                                        Integer morningEnabled,
                                        Integer afternoonEnabled,
-                                       LocalDate validFrom,
-                                       LocalDate validTo,
+                                       LocalDate validDate,
                                        Long refundRuleId,
                                        List<Long> projectIds) {}
 
@@ -48,8 +47,7 @@ public class TicketDto {
                                  Integer afternoonStockQty,
                                  Integer morningEnabled,
                                  Integer afternoonEnabled,
-                                 LocalDate validFrom,
-                                 LocalDate validTo,
+                                 LocalDate validDate,
                                  Integer status,
                                  List<Long> projectIds,
                                  String projectNames) {}

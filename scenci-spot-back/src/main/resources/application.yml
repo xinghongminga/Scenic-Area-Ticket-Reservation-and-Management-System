@@ -44,7 +44,7 @@ app:
     unpaid-ttl-minutes: 30
   storage:
     local-base-dir: ${LOCAL_STORAGE_DIR:${user.home}/scenic-spot/uploads}
-    public-base-url: ${LOCAL_PUBLIC_BASE_URL:http://localhost:8080/uploads}
+    public-base-url: ${LOCAL_PUBLIC_BASE_URL:http://39.96.52.107:8080/uploads}
   video-upload:
     base-dir: ${VIDEO_UPLOAD_DIR:${user.home}/Desktop/毕业设计/video}
   video-detection:
@@ -57,10 +57,3 @@ app:
     mini:
       app-id: ${WECHAT_MINI_APP_ID:}
       app-secret: ${WECHAT_MINI_APP_SECRET:}
-
-sky:
-  alioss:
-    endpoint: ${OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}
-    access-key-id: ${OSS_ACCESS_KEY_ID:}
-    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
-    bucket-name: ${OSS_BUCKET_NAME:sky-itcast-xhm}

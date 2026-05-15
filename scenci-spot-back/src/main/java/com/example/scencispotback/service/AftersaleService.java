@@ -25,6 +25,8 @@ import java.util.UUID;
 @Service
 public class AftersaleService {
 
+    private static final int RESCHEDULE_DAYS = 14;
+
     private final AftersaleRequestMapper aftersaleRequestMapper;
     private final TicketOrderMapper ticketOrderMapper;
     private final TicketOrderItemMapper ticketOrderItemMapper;
@@ -72,16 +74,41 @@ public class AftersaleService {
         if (!"REFUND".equals(req.reqType()) && !"RESCHEDULE".equals(req.reqType())) {
             throw new BizException("售后类型仅支持 REFUND/RESCHEDULE");
         }
-        if ("RESCHEDULE".equals(req.reqType()) && (req.targetVisitDate() == null || req.targetTimeslotId() == null)) {
-            throw new BizException("改签必须提供目标日期和时段");
+        if ("RESCHEDULE".equals(req.reqType()) && (req.targetVisitDate() == null || req.targetTimeslotId() == null || req.targetTicketId() == null)) {
+            throw new BizException("改签必须提供目标票种、日期和时段");
         }
         if ("RESCHEDULE".equals(req.reqType())) {
+            validateRescheduleDate(req.targetVisitDate());
             List<TicketOrderItem> items = ticketOrderItemMapper.listByOrderId(order.getId());
             if (items.isEmpty()) {
                 throw new BizException("订单明细不存在");
             }
             TicketOrderItem first = items.get(0);
-            TicketInventoryRow targetInv = ticketInventoryMapper.lockOne(first.getTicketId(), req.targetVisitDate(), req.targetTimeslotId());
+            Ticket targetTicket = ticketMapper.findById(req.targetTicketId());
+            if (targetTicket == null) {
+                throw new BizException("目标票种不存在");
+            }
+            if (!order.getScenicId().equals(targetTicket.getScenicId())) {
+                throw new BizException("目标票种不属于当前景区");
+            }
+            if (targetTicket.getStatus() != null && targetTicket.getStatus() != 1) {
+                throw new BizException("目标票种已下架");
+            }
+            if (targetTicket.getPriceCent() == null || !targetTicket.getPriceCent().equals(first.getUnitPriceCent())) {
+                throw new BizException("目标票种价格不匹配");
+            }
+            if (targetTicket.getValidDate() != null && !targetTicket.getValidDate().equals(req.targetVisitDate())) {
+                throw new BizException("目标票种仅支持指定日期");
+            }
+            boolean morningEnabled = (targetTicket.getMorningEnabled() == null ? 1 : targetTicket.getMorningEnabled()) == 1;
+            boolean afternoonEnabled = (targetTicket.getAfternoonEnabled() == null ? 1 : targetTicket.getAfternoonEnabled()) == 1;
+            if (!morningEnabled && Long.valueOf(1L).equals(req.targetTimeslotId())) {
+                throw new BizException("目标票种不支持上午时段");
+            }
+            if (!afternoonEnabled && Long.valueOf(2L).equals(req.targetTimeslotId())) {
+                throw new BizException("目标票种不支持下午时段");
+            }
+            TicketInventoryRow targetInv = ticketInventoryMapper.lockOne(req.targetTicketId(), req.targetVisitDate(), req.targetTimeslotId());
             if (targetInv == null) {
                 throw new BizException("目标日期时段无库存");
             }
@@ -100,6 +127,7 @@ public class AftersaleService {
         ar.setStatus("SUBMITTED");
         ar.setTargetVisitDate(req.targetVisitDate());
         ar.setTargetTimeslotId(req.targetTimeslotId());
+        ar.setTargetTicketId(req.targetTicketId());
         aftersaleRequestMapper.insert(ar);
 
         ticketOrderMapper.updateStatus(order.getId(), next);
@@ -129,22 +157,19 @@ public class AftersaleService {
             throw new BizException("订单明细不存在");
         }
         TicketOrderItem first = items.get(0);
-        Ticket ticket = ticketMapper.findById(first.getTicketId());
-        if (ticket == null) {
-            throw new BizException("门票不存在");
-        }
-
-        boolean morningEnabled = (ticket.getMorningEnabled() == null ? 1 : ticket.getMorningEnabled()) == 1;
-        boolean afternoonEnabled = (ticket.getAfternoonEnabled() == null ? 1 : ticket.getAfternoonEnabled()) == 1;
         LocalDate startDate = LocalDate.now();
-        Map<LocalDate, List<AftersaleDto.RescheduleTimeslotResp>> grouped = new LinkedHashMap<>();
-        for (TicketInventoryRow row : ticketInventoryMapper.listAvailableByTicketFromDate(first.getTicketId(), startDate)) {
-            if (ticket.getValidFrom() != null && row.getVisitDate().isBefore(ticket.getValidFrom())) {
+        LocalDate endDate = startDate.plusDays(RESCHEDULE_DAYS - 1L);
+        Map<Long, TicketInventoryRow> ticketMeta = new LinkedHashMap<>();
+        Map<Long, Map<LocalDate, List<AftersaleDto.RescheduleTimeslotResp>>> grouped = new LinkedHashMap<>();
+        for (TicketInventoryRow row : ticketInventoryMapper.listAvailableByPriceFromDate(order.getScenicId(), first.getUnitPriceCent(), startDate)) {
+            if (row.getVisitDate() == null || row.getVisitDate().isAfter(endDate)) {
                 continue;
             }
-            if (ticket.getValidTo() != null && row.getVisitDate().isAfter(ticket.getValidTo())) {
+            if (row.getTicketValidDate() != null && !row.getTicketValidDate().equals(row.getVisitDate())) {
                 continue;
             }
+            boolean morningEnabled = (row.getTicketMorningEnabled() == null ? 1 : row.getTicketMorningEnabled()) == 1;
+            boolean afternoonEnabled = (row.getTicketAfternoonEnabled() == null ? 1 : row.getTicketAfternoonEnabled()) == 1;
             if (!morningEnabled && Long.valueOf(1L).equals(row.getTimeslotId())) {
                 continue;
             }
@@ -152,16 +177,27 @@ public class AftersaleService {
                 continue;
             }
             int remain = row.getTotalQty() - row.getSoldQty() - row.getLockedQty();
-            if (remain <= 0) {
+            if (remain < first.getQty()) {
                 continue;
             }
-            grouped.computeIfAbsent(row.getVisitDate(), k -> new ArrayList<>())
+            ticketMeta.putIfAbsent(row.getTicketId(), row);
+            grouped.computeIfAbsent(row.getTicketId(), k -> new LinkedHashMap<>())
+                .computeIfAbsent(row.getVisitDate(), k -> new ArrayList<>())
                 .add(new AftersaleDto.RescheduleTimeslotResp(row.getTimeslotId(), row.getTimeslotName(), remain));
         }
 
-        return grouped.entrySet().stream()
-            .map(e -> new AftersaleDto.RescheduleOptionResp(e.getKey(), e.getValue()))
-            .toList();
+        List<AftersaleDto.RescheduleOptionResp> resp = new ArrayList<>();
+        for (Map.Entry<Long, Map<LocalDate, List<AftersaleDto.RescheduleTimeslotResp>>> ticketEntry : grouped.entrySet()) {
+            TicketInventoryRow meta = ticketMeta.get(ticketEntry.getKey());
+            if (meta == null) {
+                continue;
+            }
+            for (Map.Entry<LocalDate, List<AftersaleDto.RescheduleTimeslotResp>> dateEntry : ticketEntry.getValue().entrySet()) {
+                resp.add(new AftersaleDto.RescheduleOptionResp(meta.getTicketId(), meta.getTicketName(), meta.getTicketPriceCent(),
+                    dateEntry.getKey(), dateEntry.getValue()));
+            }
+        }
+        return resp;
     }
 
     public List<AftersaleDto.ReqResp> allList(AftersaleDto.QueryReq query) {
@@ -179,7 +215,8 @@ public class AftersaleService {
         }
         aftersaleRequestMapper.updateContent(ar.getId(), req == null ? ar.getReason() : req.reason(),
             req == null ? ar.getTargetVisitDate() : req.targetVisitDate(),
-            req == null ? ar.getTargetTimeslotId() : req.targetTimeslotId());
+            req == null ? ar.getTargetTimeslotId() : req.targetTimeslotId(),
+            req == null ? ar.getTargetTicketId() : req.targetTicketId());
     }
 
     @Transactional
@@ -239,8 +276,40 @@ public class AftersaleService {
             return;
         }
 
+        if (ar.getTargetTicketId() == null) {
+            throw new BizException("改签目标票种不能为空");
+        }
+        if (ar.getTargetTimeslotId() == null) {
+            throw new BizException("改签目标时段不能为空");
+        }
+        Ticket targetTicket = ticketMapper.findById(ar.getTargetTicketId());
+        if (targetTicket == null) {
+            throw new BizException("目标票种不存在");
+        }
+        if (!order.getScenicId().equals(targetTicket.getScenicId())) {
+            throw new BizException("目标票种不属于当前景区");
+        }
+        if (targetTicket.getStatus() != null && targetTicket.getStatus() != 1) {
+            throw new BizException("目标票种已下架");
+        }
+        if (targetTicket.getPriceCent() == null || !targetTicket.getPriceCent().equals(first.getUnitPriceCent())) {
+            throw new BizException("目标票种价格不匹配");
+        }
+        if (targetTicket.getValidDate() != null && !targetTicket.getValidDate().equals(ar.getTargetVisitDate())) {
+            throw new BizException("目标票种仅支持指定日期");
+        }
+        boolean morningEnabled = (targetTicket.getMorningEnabled() == null ? 1 : targetTicket.getMorningEnabled()) == 1;
+        boolean afternoonEnabled = (targetTicket.getAfternoonEnabled() == null ? 1 : targetTicket.getAfternoonEnabled()) == 1;
+        if (!morningEnabled && Long.valueOf(1L).equals(ar.getTargetTimeslotId())) {
+            throw new BizException("目标票种不支持上午时段");
+        }
+        if (!afternoonEnabled && Long.valueOf(2L).equals(ar.getTargetTimeslotId())) {
+            throw new BizException("目标票种不支持下午时段");
+        }
+
         TicketInventoryRow oldInv = ticketInventoryMapper.lockOne(first.getTicketId(), order.getVisitDate(), order.getTimeslotId());
-        TicketInventoryRow newInv = ticketInventoryMapper.lockOne(first.getTicketId(), ar.getTargetVisitDate(), ar.getTargetTimeslotId());
+        validateRescheduleDate(ar.getTargetVisitDate());
+        TicketInventoryRow newInv = ticketInventoryMapper.lockOne(ar.getTargetTicketId(), ar.getTargetVisitDate(), ar.getTargetTimeslotId());
         if (newInv == null) {
             throw new BizException("目标日期时段无库存");
         }
@@ -253,6 +322,9 @@ public class AftersaleService {
             ticketInventoryMapper.subSold(oldInv.getId(), first.getQty());
         }
         ticketInventoryMapper.addSold(newInv.getId(), first.getQty());
+        ticketOrderItemMapper.updateTicketForReschedule(first.getId(), targetTicket.getId(), targetTicket.getName(),
+            targetTicket.getPriceCent(), first.getQty() * targetTicket.getPriceCent());
+        orderTicketMapper.updateTicketByOrderId(order.getId(), targetTicket.getId());
         ticketOrderMapper.updateVisit(order.getId(), ar.getTargetVisitDate(), ar.getTargetTimeslotId());
         ticketOrderMapper.updateStatus(order.getId(), "RESCHEDULED");
 
@@ -286,7 +358,7 @@ public class AftersaleService {
             user == null ? null : user.getNickname(),
             user == null ? null : user.getPhone(),
             r.getReqType(), r.getStatus(), r.getReason(),
-            r.getTargetVisitDate(), r.getTargetTimeslotId(), r.getCreatedAt());
+            r.getTargetVisitDate(), r.getTargetTimeslotId(), r.getTargetTicketId(), r.getCreatedAt());
     }
 
     private String genReqNo() {
@@ -297,5 +369,16 @@ public class AftersaleService {
     private String genRefundNo() {
         return "RF" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
             + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+    }
+
+    private void validateRescheduleDate(LocalDate targetDate) {
+        if (targetDate == null) {
+            throw new BizException("改签日期不能为空");
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(RESCHEDULE_DAYS - 1L);
+        if (targetDate.isBefore(today) || targetDate.isAfter(maxDate)) {
+            throw new BizException("改签仅支持未来14天内日期");
+        }
     }
 }

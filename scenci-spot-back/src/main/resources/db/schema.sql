@@ -169,8 +169,7 @@ CREATE TABLE IF NOT EXISTS ticket (
   stock_qty INT NOT NULL DEFAULT 0,
   morning_enabled TINYINT NOT NULL DEFAULT 1,
   afternoon_enabled TINYINT NOT NULL DEFAULT 1,
-  valid_from DATE NULL,
-  valid_to DATE NULL,
+  valid_date DATE NULL,
   refund_rule_id BIGINT NULL,
   status TINYINT NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -250,6 +249,62 @@ SET @ddl_add_afternoon_enabled = IF(@col_exists_afternoon_enabled = 0,
 PREPARE stmt_add_afternoon_enabled FROM @ddl_add_afternoon_enabled;
 EXECUTE stmt_add_afternoon_enabled;
 DEALLOCATE PREPARE stmt_add_afternoon_enabled;
+
+SET @col_exists_valid_date = (
+  SELECT COUNT(1)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'ticket'
+    AND COLUMN_NAME = 'valid_date'
+);
+SET @ddl_add_valid_date = IF(@col_exists_valid_date = 0,
+  'ALTER TABLE ticket ADD COLUMN valid_date DATE NULL AFTER afternoon_enabled',
+  'SELECT 1');
+PREPARE stmt_add_valid_date FROM @ddl_add_valid_date;
+EXECUTE stmt_add_valid_date;
+DEALLOCATE PREPARE stmt_add_valid_date;
+
+SET @ticket_valid_from_exists = (
+  SELECT COUNT(1)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'ticket'
+    AND COLUMN_NAME = 'valid_from'
+);
+SET @ticket_valid_to_exists = (
+  SELECT COUNT(1)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'ticket'
+    AND COLUMN_NAME = 'valid_to'
+);
+SET @ticket_backfill_valid_date_sql := IF(
+  @ticket_valid_from_exists > 0,
+  'UPDATE ticket SET valid_date = COALESCE(valid_date, valid_from)',
+  'SELECT 1'
+);
+PREPARE stmt_backfill_valid_date FROM @ticket_backfill_valid_date_sql;
+EXECUTE stmt_backfill_valid_date;
+DEALLOCATE PREPARE stmt_backfill_valid_date;
+
+SET @ticket_drop_valid_from_sql := IF(
+  @ticket_valid_from_exists > 0,
+  'ALTER TABLE ticket DROP COLUMN valid_from',
+  'SELECT 1'
+);
+PREPARE stmt_drop_valid_from FROM @ticket_drop_valid_from_sql;
+EXECUTE stmt_drop_valid_from;
+DEALLOCATE PREPARE stmt_drop_valid_from;
+
+SET @ticket_drop_valid_to_sql := IF(
+  @ticket_valid_to_exists > 0,
+  'ALTER TABLE ticket DROP COLUMN valid_to',
+  'SELECT 1'
+);
+PREPARE stmt_drop_valid_to FROM @ticket_drop_valid_to_sql;
+EXECUTE stmt_drop_valid_to;
+DEALLOCATE PREPARE stmt_drop_valid_to;
+
 CREATE TABLE IF NOT EXISTS ticket_inventory (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   ticket_id BIGINT NOT NULL,
@@ -347,6 +402,7 @@ CREATE TABLE IF NOT EXISTS aftersale_request (
   audit_comment VARCHAR(255) NULL,
   target_visit_date DATE NULL,
   target_timeslot_id BIGINT NULL,
+  target_ticket_id BIGINT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_req_no (req_no),
@@ -354,8 +410,25 @@ CREATE TABLE IF NOT EXISTS aftersale_request (
   CONSTRAINT fk_ar_order FOREIGN KEY (order_id) REFERENCES ticket_order(id),
   CONSTRAINT fk_ar_user FOREIGN KEY (user_id) REFERENCES user_account(id),
   CONSTRAINT fk_ar_auditor FOREIGN KEY (auditor_id) REFERENCES user_account(id),
-  CONSTRAINT fk_ar_target_slot FOREIGN KEY (target_timeslot_id) REFERENCES timeslot(id)
+  CONSTRAINT fk_ar_target_slot FOREIGN KEY (target_timeslot_id) REFERENCES timeslot(id),
+  CONSTRAINT fk_ar_target_ticket FOREIGN KEY (target_ticket_id) REFERENCES ticket(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @ar_target_ticket_col_exists = (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'aftersale_request'
+    AND COLUMN_NAME = 'target_ticket_id'
+);
+SET @ar_target_ticket_alter_sql := IF(
+  @ar_target_ticket_col_exists = 0,
+  'ALTER TABLE aftersale_request ADD COLUMN target_ticket_id BIGINT NULL AFTER target_timeslot_id',
+  'SELECT 1'
+);
+PREPARE ar_target_ticket_stmt FROM @ar_target_ticket_alter_sql;
+EXECUTE ar_target_ticket_stmt;
+DEALLOCATE PREPARE ar_target_ticket_stmt;
 
 CREATE TABLE IF NOT EXISTS refund_order (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,

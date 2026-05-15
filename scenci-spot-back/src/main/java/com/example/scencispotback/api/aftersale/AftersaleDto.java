@@ -12,7 +12,8 @@ public class AftersaleDto {
                             @NotBlank String reqType,
                             String reason,
                             LocalDate targetVisitDate,
-                            Long targetTimeslotId) {}
+                            Long targetTimeslotId,
+                            Long targetTicketId) {}
 
     public record AuditReq(String auditComment) {}
 
@@ -20,7 +21,8 @@ public class AftersaleDto {
 
     public record UpdateReq(String reason,
                             LocalDate targetVisitDate,
-                            Long targetTimeslotId) {}
+                            Long targetTimeslotId,
+                            Long targetTicketId) {}
 
     public record ReqResp(String reqNo,
                           String orderNo,
@@ -31,12 +33,16 @@ public class AftersaleDto {
                           String reason,
                           LocalDate targetVisitDate,
                           Long targetTimeslotId,
+                          Long targetTicketId,
                           LocalDateTime createdAt) {}
 
     public record RescheduleTimeslotResp(Long timeslotId,
                                          String timeslotName,
                                          Integer remainQty) {}
 
-    public record RescheduleOptionResp(LocalDate date,
+    public record RescheduleOptionResp(Long ticketId,
+                                       String ticketName,
+                                       Integer ticketPriceCent,
+                                       LocalDate date,
                                        List<RescheduleTimeslotResp> timeslots) {}
 }

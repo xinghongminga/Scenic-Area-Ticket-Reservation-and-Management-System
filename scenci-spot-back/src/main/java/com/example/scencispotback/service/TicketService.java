@@ -36,15 +36,18 @@ public class TicketService {
     private final TicketInventoryMapper ticketInventoryMapper;
     private final TicketProjectMapper ticketProjectMapper;
     private final ScenicAreaMapper scenicAreaMapper;
+    private final com.example.scencispotback.mapper.TicketOrderItemMapper ticketOrderItemMapper;
 
     public TicketService(TicketMapper ticketMapper,
                          TicketInventoryMapper ticketInventoryMapper,
                          TicketProjectMapper ticketProjectMapper,
-                         ScenicAreaMapper scenicAreaMapper) {
+                         ScenicAreaMapper scenicAreaMapper,
+                         com.example.scencispotback.mapper.TicketOrderItemMapper ticketOrderItemMapper) {
         this.ticketMapper = ticketMapper;
         this.ticketInventoryMapper = ticketInventoryMapper;
         this.ticketProjectMapper = ticketProjectMapper;
         this.scenicAreaMapper = scenicAreaMapper;
+        this.ticketOrderItemMapper = ticketOrderItemMapper;
     }
 
     public List<TicketDto.TicketListResp> list(TicketDto.TicketQuery query, boolean onlyOnline) {
@@ -52,9 +55,26 @@ public class TicketService {
         if (tickets.isEmpty()) {
             return List.of();
         }
+        if (query.visitDate() != null) {
+            tickets = tickets.stream()
+                .filter(t -> query.visitDate().equals(t.getValidDate()))
+                .filter(t -> hasInventoryOnDate(t.getId(), query.visitDate()))
+                .toList();
+            if (tickets.isEmpty()) {
+                return List.of();
+            }
+        }
         Map<Long, List<Long>> projectIdsByTicket = loadProjectIdsByTicket(tickets);
         Map<Long, String> projectNamesById = loadProjectNameById(projectIdsByTicket.values().stream().flatMap(List::stream).distinct().toList());
-        return tickets.stream().map(t -> toListResp(t, projectIdsByTicket.getOrDefault(t.getId(), List.of()), projectNamesById)).toList();
+        Map<Long, Map<Long, TicketInventoryRow>> latestInventoryByTicket = loadInventoryByTicketDate(tickets);
+        return tickets.stream()
+            .map(t -> toListResp(
+                t,
+                projectIdsByTicket.getOrDefault(t.getId(), List.of()),
+                projectNamesById,
+                latestInventoryByTicket.getOrDefault(t.getId(), Map.of())
+            ))
+            .toList();
     }
 
     public TicketDto.TicketDetailResp detail(Long id, LocalDate date) {
@@ -64,8 +84,9 @@ public class TicketService {
         }
         List<Long> projectIds = ticketProjectMapper.listByTicketId(id).stream().map(TicketProject::getProjectId).distinct().toList();
         Map<Long, String> projectNamesById = loadProjectNameById(projectIds);
+        Map<Long, TicketInventoryRow> latestInventory = loadInventoryByTicketDate(List.of(ticket)).getOrDefault(id, Map.of());
         List<TicketDto.InventoryResp> inv = inventory(id, date == null ? LocalDate.now() : date);
-        return new TicketDto.TicketDetailResp(toListResp(ticket, projectIds, projectNamesById), inv);
+        return new TicketDto.TicketDetailResp(toListResp(ticket, projectIds, projectNamesById, latestInventory), inv);
     }
 
     public List<TicketDto.InventoryResp> inventory(Long ticketId, LocalDate date) {
@@ -74,7 +95,7 @@ public class TicketService {
             throw new BizException("门票不存在");
         }
         LocalDate queryDate = date == null ? LocalDate.now() : date;
-        if (!isInValidDateRange(ticket, queryDate)) {
+        if (!isValidDate(ticket, queryDate)) {
             return List.of();
         }
         boolean morningEnabled = (ticket.getMorningEnabled() == null ? 1 : ticket.getMorningEnabled()) == 1;
@@ -107,13 +128,12 @@ public class TicketService {
         t.setMorningEnabled(req.morningEnabled() == null ? 1 : req.morningEnabled());
         t.setAfternoonEnabled(req.afternoonEnabled() == null ? 1 : req.afternoonEnabled());
         ensureAtLeastOneTimeslotEnabled(t.getMorningEnabled(), t.getAfternoonEnabled());
-        t.setValidFrom(req.validFrom());
-        t.setValidTo(req.validTo());
+        t.setValidDate(req.validDate());
         t.setRefundRuleId(req.refundRuleId());
         t.setStatus(1);
         ticketMapper.insert(t);
         bindTicketProjects(t.getId(), req.projectIds());
-        upsertInventoryByTimeslot(t.getId(), req.stockQty(), req.morningStockQty(), req.afternoonStockQty(), t.getMorningEnabled(), t.getAfternoonEnabled());
+        upsertInventoryByTimeslot(t.getId(), t.getValidDate(), req.stockQty(), req.morningStockQty(), req.afternoonStockQty(), t.getMorningEnabled(), t.getAfternoonEnabled());
         return t.getId();
     }
 
@@ -133,13 +153,12 @@ public class TicketService {
         old.setMorningEnabled(req.morningEnabled() == null ? 1 : req.morningEnabled());
         old.setAfternoonEnabled(req.afternoonEnabled() == null ? 1 : req.afternoonEnabled());
         ensureAtLeastOneTimeslotEnabled(old.getMorningEnabled(), old.getAfternoonEnabled());
-        old.setValidFrom(req.validFrom());
-        old.setValidTo(req.validTo());
+        old.setValidDate(req.validDate());
         old.setRefundRuleId(req.refundRuleId());
         ticketMapper.update(old);
         ticketProjectMapper.deleteByTicketId(id);
         bindTicketProjects(id, req.projectIds());
-        upsertInventoryByTimeslot(old.getId(), req.stockQty(), req.morningStockQty(), req.afternoonStockQty(), old.getMorningEnabled(), old.getAfternoonEnabled());
+        upsertInventoryByTimeslot(old.getId(), old.getValidDate(), req.stockQty(), req.morningStockQty(), req.afternoonStockQty(), old.getMorningEnabled(), old.getAfternoonEnabled());
     }
 
     public void updateStatus(Long id, Integer status) {
@@ -152,6 +171,10 @@ public class TicketService {
     public void delete(Long id) {
         if (ticketMapper.findById(id) == null) {
             throw new BizException("门票不存在");
+        }
+        int refCount = ticketOrderItemMapper.countByTicketId(id);
+        if (refCount > 0) {
+            throw new BizException("存在历史订单，无法删除门票");
         }
         ticketInventoryMapper.deleteByTicketId(id);
         ticketProjectMapper.deleteByTicketId(id);
@@ -177,7 +200,7 @@ public class TicketService {
         List<Ticket> tickets = ticketMapper.list(scenicId, null, null, null, null, false);
         try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = wb.createSheet("门票列表");
-            String[] headers = {"ID", "景区ID", "门票名称", "描述/入园须知", "门票类型", "价格(分)", "库存", "有效期开始", "有效期结束", "退改规则ID", "状态"};
+            String[] headers = {"ID", "景区ID", "门票名称", "描述/入园须知", "门票类型", "价格(分)", "库存", "有效日期", "退改规则ID", "状态"};
             Row headRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 headRow.createCell(i).setCellValue(headers[i]);
@@ -192,10 +215,9 @@ public class TicketService {
                 row.createCell(4).setCellValue(toTicketTypeZh(t.getTicketType()));
                 row.createCell(5).setCellValue(t.getPriceCent() != null ? t.getPriceCent() : 0);
                 row.createCell(6).setCellValue(t.getStockQty() != null ? t.getStockQty() : 0);
-                row.createCell(7).setCellValue(t.getValidFrom() != null ? t.getValidFrom().toString() : "");
-                row.createCell(8).setCellValue(t.getValidTo() != null ? t.getValidTo().toString() : "");
-                row.createCell(9).setCellValue(t.getRefundRuleId() != null ? t.getRefundRuleId() : 0);
-                row.createCell(10).setCellValue(t.getStatus() == 1 ? "上架" : "下架");
+                row.createCell(7).setCellValue(t.getValidDate() != null ? t.getValidDate().toString() : "");
+                row.createCell(8).setCellValue(t.getRefundRuleId() != null ? t.getRefundRuleId() : 0);
+                row.createCell(9).setCellValue(t.getStatus() == 1 ? "上架" : "下架");
             }
             wb.write(out);
             return out.toByteArray();
@@ -207,7 +229,7 @@ public class TicketService {
     public byte[] exportImportTemplate() {
         try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = wb.createSheet("门票导入模板");
-            String[] headers = {"门票名称", "景区项目", "票种", "价格(元)", "上午库存", "下午库存", "场次", "状态", "有效期开始", "有效期结束", "退款规则ID"};
+            String[] headers = {"门票名称", "景区项目", "票种", "价格(元)", "上午库存", "下午库存", "场次", "状态", "有效日期", "退款规则ID"};
             Row headRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 headRow.createCell(i).setCellValue(headers[i]);
@@ -223,9 +245,8 @@ public class TicketService {
             exampleRow.createCell(5).setCellValue("80");
             exampleRow.createCell(6).setCellValue("全天");
             exampleRow.createCell(7).setCellValue("上架");
-            exampleRow.createCell(8).setCellValue("2026-01-01");
-            exampleRow.createCell(9).setCellValue("2026-12-31");
-            exampleRow.createCell(10).setCellValue("1");
+            exampleRow.createCell(8).setCellValue("2026-05-13");
+            exampleRow.createCell(9).setCellValue("1");
 
             wb.write(out);
             return out.toByteArray();
@@ -234,7 +255,7 @@ public class TicketService {
         }
     }
 
-    // ===== Excel Import (columns: 门票名称, 景区项目, 票种, 价格(元), 上午库存, 下午库存, 场次, 状态, 有效期开始, 有效期结束, 退款规则ID) =====
+    // ===== Excel Import (columns: 门票名称, 景区项目, 票种, 价格(元), 上午库存, 下午库存, 场次, 状态, 有效日期, 退款规则ID) =====
 
     @Transactional
     public int importExcel(MultipartFile file) {
@@ -261,7 +282,7 @@ public class TicketService {
                 String afternoonStockStr = getCellString(row, 5);
                 String timeslotStr = getCellString(row, 6);
                 String statusStr = getCellString(row, 7);
-                String refundRuleIdStr = getCellString(row, 10);
+                String refundRuleIdStr = getCellString(row, 9);
 
                 List<Long> projectIds = parseProjectIds(projectCell, projectById, projectIdByName, i + 1);
                 Integer morningStockQty = parseNonNegativeInt(morningStockStr, 0, i + 1, "上午库存");
@@ -291,14 +312,13 @@ public class TicketService {
                 t.setStockQty(stockQty);
                 t.setMorningEnabled(morningEnabled);
                 t.setAfternoonEnabled(afternoonEnabled);
-                t.setValidFrom(parseLocalDateCell(row, 8, i + 1, "有效期开始"));
-                t.setValidTo(parseLocalDateCell(row, 9, i + 1, "有效期结束"));
+                t.setValidDate(parseLocalDateCell(row, 8, i + 1, "有效日期"));
                 t.setRefundRuleId(parseNullableLong(refundRuleIdStr, i + 1, "退款规则ID"));
                 t.setStatus(status);
 
                 ticketMapper.insert(t);
                 bindTicketProjects(t.getId(), projectIds);
-                upsertInventoryByTimeslot(t.getId(), stockQty, morningStockQty, afternoonStockQty, morningEnabled, afternoonEnabled);
+                upsertInventoryByTimeslot(t.getId(), t.getValidDate(), stockQty, morningStockQty, afternoonStockQty, morningEnabled, afternoonEnabled);
                 count++;
             }
             return count;
@@ -487,15 +507,49 @@ public class TicketService {
         };
     }
 
-    private TicketDto.TicketListResp toListResp(Ticket t, List<Long> projectIds, Map<Long, String> projectNamesById) {
+    private TicketDto.TicketListResp toListResp(Ticket t,
+                                               List<Long> projectIds,
+                                               Map<Long, String> projectNamesById,
+                                               Map<Long, TicketInventoryRow> inventoryByTimeslot) {
         String projectNames = projectIds.stream()
             .map(projectNamesById::get)
             .filter(Objects::nonNull)
             .collect(Collectors.joining(" / "));
+        TicketInventoryRow morningRow = inventoryByTimeslot.get(1L);
+        TicketInventoryRow afternoonRow = inventoryByTimeslot.get(2L);
         return new TicketDto.TicketListResp(t.getId(), t.getScenicId(), t.getName(), t.getImageUrl(),
             t.getDescription(), t.getTicketType(),
-            t.getPriceCent(), t.getStockQty(), null, null, t.getMorningEnabled(), t.getAfternoonEnabled(), t.getValidFrom(), t.getValidTo(), t.getStatus(),
+            t.getPriceCent(), t.getStockQty(),
+            morningRow == null ? null : morningRow.getTotalQty(),
+            afternoonRow == null ? null : afternoonRow.getTotalQty(),
+            t.getMorningEnabled(), t.getAfternoonEnabled(), t.getValidDate(), t.getStatus(),
             projectIds, projectNames);
+    }
+
+    private Map<Long, Map<Long, TicketInventoryRow>> loadInventoryByTicketDate(List<Ticket> tickets) {
+        Map<Long, Map<Long, TicketInventoryRow>> result = new HashMap<>();
+        for (Ticket ticket : tickets) {
+            List<TicketInventoryRow> rows = ticket.getValidDate() == null
+                ? ticketInventoryMapper.listLatestByTicket(ticket.getId())
+                : ticketInventoryMapper.listByTicketAndDate(ticket.getId(), ticket.getValidDate());
+            Map<Long, TicketInventoryRow> byTimeslot = new HashMap<>();
+            for (TicketInventoryRow row : rows) {
+                byTimeslot.putIfAbsent(row.getTimeslotId(), row);
+            }
+            result.put(ticket.getId(), byTimeslot);
+        }
+        return result;
+    }
+
+    private boolean hasInventoryOnDate(Long ticketId, LocalDate date) {
+        List<TicketInventoryRow> rows = ticketInventoryMapper.listByTicketAndDate(ticketId, date);
+        for (TicketInventoryRow row : rows) {
+            int remain = row.getTotalQty() - row.getSoldQty() - row.getLockedQty();
+            if (remain > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<Long, List<Long>> loadProjectIdsByTicket(List<Ticket> tickets) {
@@ -549,6 +603,7 @@ public class TicketService {
     }
 
     private void upsertInventoryByTimeslot(Long ticketId,
+                                           LocalDate validDate,
                                            Integer stockQty,
                                            Integer morningStockQty,
                                            Integer afternoonStockQty,
@@ -557,7 +612,7 @@ public class TicketService {
         int fallback = stockQty == null ? 0 : stockQty;
         int morningTarget = morningStockQty == null ? fallback : morningStockQty;
         int afternoonTarget = afternoonStockQty == null ? fallback : afternoonStockQty;
-        LocalDate date = LocalDate.now();
+        LocalDate date = validDate == null ? LocalDate.now() : validDate;
         if ((morningEnabled == null ? 1 : morningEnabled) == 1) {
             upsertOneTimeslotInventory(ticketId, date, 1L, morningTarget);
         }
@@ -584,14 +639,8 @@ public class TicketService {
         }
     }
 
-    private boolean isInValidDateRange(Ticket ticket, LocalDate date) {
-        if (ticket.getValidFrom() != null && date.isBefore(ticket.getValidFrom())) {
-            return false;
-        }
-        if (ticket.getValidTo() != null && date.isAfter(ticket.getValidTo())) {
-            return false;
-        }
-        return true;
+    private boolean isValidDate(Ticket ticket, LocalDate date) {
+        return ticket.getValidDate() == null || ticket.getValidDate().equals(date);
     }
 
     private TicketDto.InventoryResp toInventoryResp(TicketInventoryRow row) {

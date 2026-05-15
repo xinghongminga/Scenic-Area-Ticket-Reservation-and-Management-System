@@ -3,21 +3,20 @@
     <view class="title">发起售后</view>
     <input class="input" placeholder="订单号" value="{{orderNo}}" bindinput="onOrderNoInput" />
     <picker range="{{types}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
-      <view class="input">类型: {{types[typeIndex].label}}</view>
+      <view class="input">售后类型: {{types[typeIndex].label}}</view>
+    </picker>
+    <picker range="{{reasonOptions}}" value="{{reasonIndex}}" bindchange="onReasonChange">
+      <view class="input">售后理由: {{reason || '请选择理由'}}</view>
     </picker>
     <view wx:if="{{types[typeIndex].key==='RESCHEDULE'}}" class="reschedule-wrap">
-      <button class="btn ghost" loading="{{loadingReschedule}}" bindtap="loadRescheduleOptions">查询可改签日期</button>
-      <view class="tip" wx:if="{{!availableDateRange.length}}">仅能选择有余票的日期，请输入订单号后点击查询</view>
-      <picker wx:if="{{availableDateRange.length}}" range="{{availableDateRange}}" value="{{targetDateIndex}}" bindchange="onDateChange">
-        <view class="input">改签到日期: {{targetVisitDate || '请选择日期'}}</view>
-      </picker>
-      <picker wx:if="{{targetTimeslotRange.length}}" range="{{targetTimeslotRange}}" value="{{targetTimeslotIndex}}" bindchange="onTimeslotChange">
-        <view class="input">改签到时段: {{targetTimeslotRange[targetTimeslotIndex]}}</view>
-      </picker>
-      <view class="tip" wx:if="{{availableDateRange.length && !targetTimeslotRange.length}}">该日期暂无可改签时段</view>
+      <button class="btn ghost" loading="{{loadingReschedule}}" bindtap="loadRescheduleOptions">查询未来14天可改签日期</button>
+      <button wx:if="{{rescheduleOptions.length}}" class="btn ghost secondary" bindtap="openRescheduleModal">选择改签日期和时段</button>
+      <view class="tip" wx:if="{{!rescheduleOptions.length}}">请先输入订单号并查询余票，系统会列出未来14天有余票的日期和时段</view>
+      <view class="summary" wx:if="{{targetVisitDate}}">
+        已选: {{targetTicketName}} {{targetTicketPriceYuan}} · {{targetVisitDate}} · {{targetTimeslotRange[targetTimeslotIndex] || '未选择时段'}}
+      </view>
     </view>
-    <input class="input" placeholder="原因" value="{{reason}}" bindinput="onReasonInput" />
-    <button class="btn" bindtap="submit">提交申请</button>
+    <button class="btn" bindtap="submit">提交审核</button>
   </view>
 
   <view class="card">
@@ -39,5 +38,49 @@
       <view class="row note">原因: {{item.reason || '无'}}</view>
     </view>
     <view wx:if="{{!list.length}}" class="empty">暂无售后记录</view>
+  </view>
+
+  <view wx:if="{{rescheduleModalVisible}}" class="modal-mask" bindtap="closeRescheduleModal">
+    <view class="modal-card" catchtap="noop">
+      <view class="modal-title">选择改签日期和时段</view>
+      <scroll-view class="modal-body" scroll-y>
+        <view
+          wx:for="{{rescheduleOptions}}"
+          wx:for-item="option"
+          wx:for-index="dateIndex"
+          wx:key="optionKey"
+          class="date-block {{targetDateIndex===dateIndex ? 'active' : ''}}"
+          data-index="{{dateIndex}}"
+          bindtap="selectRescheduleDate"
+        >
+          <view class="ticket-head">
+            <view class="ticket-name">{{option.ticketName}}</view>
+            <view class="ticket-price">{{option.ticketPriceYuan}}</view>
+          </view>
+          <view class="date-head">
+            <view class="date-text">{{option.date}}</view>
+            <view class="date-count">{{option.timeslots.length}} 个可选时段</view>
+          </view>
+          <view class="timeslot-grid">
+            <view
+              wx:for="{{option.timeslots}}"
+              wx:for-item="slot"
+              wx:for-index="slotIndex"
+              wx:key="timeslotId"
+              class="timeslot {{targetDateIndex===dateIndex && targetTimeslotIndex===slotIndex ? 'selected' : ''}}"
+              data-date-index="{{dateIndex}}"
+              data-slot-index="{{slotIndex}}"
+              catchtap="selectRescheduleTimeslot"
+            >
+              {{slot.timeslotName}} · 余票{{slot.remainQty}}
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="modal-actions">
+        <button class="btn ghost" bindtap="closeRescheduleModal">取消</button>
+        <button class="btn" bindtap="confirmRescheduleChoice">确认选择</button>
+      </view>
+    </view>
   </view>
 </view>

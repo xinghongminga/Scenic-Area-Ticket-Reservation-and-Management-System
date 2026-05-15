@@ -4,6 +4,12 @@
 	margin-top: 8rpx;
 }
 
+.btn.ghost.secondary {
+	background: #fff7ed;
+	color: #c2410c;
+	border: 1rpx solid #fed7aa;
+}
+
 .toolbar {
 	display: grid;
 	gap: 10rpx;
@@ -13,6 +19,16 @@
 	display: grid;
 	gap: 10rpx;
 	margin-top: 6rpx;
+}
+
+.summary {
+	font-size: 24rpx;
+	color: #0f172a;
+	background: #f8fafc;
+	border: 1rpx solid #e2e8f0;
+	border-radius: 16rpx;
+	padding: 16rpx 18rpx;
+	line-height: 1.5;
 }
 
 .tip {
@@ -75,4 +91,120 @@
 	text-align: center;
 	color: #94a3b8;
 	font-size: 24rpx;
+}
+
+.modal-mask {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 99;
+	padding: 28rpx;
+	box-sizing: border-box;
+}
+
+.modal-card {
+	width: 100%;
+	max-height: 84vh;
+	background: #ffffff;
+	border-radius: 28rpx;
+	padding: 24rpx;
+	box-sizing: border-box;
+	display: grid;
+	gap: 18rpx;
+}
+
+.modal-title {
+	font-size: 30rpx;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+.modal-body {
+	max-height: 58vh;
+	display: grid;
+	gap: 16rpx;
+}
+
+.date-block {
+	border: 1rpx solid #e2e8f0;
+	border-radius: 20rpx;
+	padding: 18rpx;
+	display: grid;
+	gap: 14rpx;
+	background: #f8fafc;
+}
+
+.date-block.active {
+	border-color: #fb923c;
+	background: #fff7ed;
+}
+
+.date-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16rpx;
+}
+
+.ticket-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16rpx;
+	background: #ffffff;
+	border: 1rpx solid #e2e8f0;
+	border-radius: 16rpx;
+	padding: 12rpx 16rpx;
+}
+
+.ticket-name {
+	font-size: 26rpx;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.ticket-price {
+	font-size: 24rpx;
+	color: #c2410c;
+}
+
+.date-text {
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.date-count {
+	font-size: 22rpx;
+	color: #64748b;
+}
+
+.timeslot-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10rpx;
+}
+
+.timeslot {
+	font-size: 22rpx;
+	color: #334155;
+	background: #ffffff;
+	border: 1rpx solid #e2e8f0;
+	border-radius: 999rpx;
+	padding: 10rpx 16rpx;
+}
+
+.timeslot.selected {
+	border-color: #fb923c;
+	color: #c2410c;
+	background: #fff7ed;
+}
+
+.modal-actions {
+	display: flex;
+	gap: 14rpx;
+	justify-content: flex-end;
 }

@@ -5,6 +5,11 @@ import java.time.LocalDate;
 public class TicketInventoryRow {
     private Long id;
     private Long ticketId;
+    private String ticketName;
+    private Integer ticketPriceCent;
+    private Integer ticketMorningEnabled;
+    private Integer ticketAfternoonEnabled;
+    private LocalDate ticketValidDate;
     private LocalDate visitDate;
     private Long timeslotId;
     private String timeslotName;
@@ -27,6 +32,46 @@ public class TicketInventoryRow {
 
     public void setTicketId(Long ticketId) {
         this.ticketId = ticketId;
+    }
+
+    public String getTicketName() {
+        return ticketName;
+    }
+
+    public void setTicketName(String ticketName) {
+        this.ticketName = ticketName;
+    }
+
+    public Integer getTicketPriceCent() {
+        return ticketPriceCent;
+    }
+
+    public void setTicketPriceCent(Integer ticketPriceCent) {
+        this.ticketPriceCent = ticketPriceCent;
+    }
+
+    public Integer getTicketMorningEnabled() {
+        return ticketMorningEnabled;
+    }
+
+    public void setTicketMorningEnabled(Integer ticketMorningEnabled) {
+        this.ticketMorningEnabled = ticketMorningEnabled;
+    }
+
+    public Integer getTicketAfternoonEnabled() {
+        return ticketAfternoonEnabled;
+    }
+
+    public void setTicketAfternoonEnabled(Integer ticketAfternoonEnabled) {
+        this.ticketAfternoonEnabled = ticketAfternoonEnabled;
+    }
+
+    public LocalDate getTicketValidDate() {
+        return ticketValidDate;
+    }
+
+    public void setTicketValidDate(LocalDate ticketValidDate) {
+        this.ticketValidDate = ticketValidDate;
     }
 
     public LocalDate getVisitDate() {

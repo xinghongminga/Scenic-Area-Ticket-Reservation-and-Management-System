@@ -1,4 +1,4 @@
-const { request } = require('../../utils/request');
+const { request, normalizeImageUrl } = require('../../utils/request');
 const { hideTopNotice, pushFlashNotice, showTopNotice } = require('../../utils/notice');
 
 const ORDER_STATUS_TEXT = {
@@ -73,7 +73,7 @@ Page({
         ...item,
         amountYuanText: (Number(item.totalAmountCent || 0) / 100).toFixed(2),
         statusText: ORDER_STATUS_TEXT[item.status] || item.status,
-        ticketImageUrl: item.ticketImageUrl || '',
+        ticketImageUrl: normalizeImageUrl(item.ticketImageUrl || ''),
         ticketName: item.ticketName || '门票'
       }));
     this.setData({ list });
@@ -128,16 +128,14 @@ Page({
   },
   goAftersale(e) {
     const orderNo = e.currentTarget.dataset.orderno;
-    wx.switchTab({
-      url: '/pages/aftersale/aftersale',
-      success: () => {
-        setTimeout(() => {
-          const pages = getCurrentPages();
-          const current = pages[pages.length - 1];
-          if (current && current.route === 'pages/aftersale/aftersale') {
-            current.setData({ orderNo });
-          }
-        }, 80);
+    const typeList = ['申请退款', '申请改签'];
+    wx.showActionSheet({
+      itemList: typeList,
+      success: (res) => {
+        const reqType = res.tapIndex === 1 ? 'RESCHEDULE' : 'REFUND';
+        wx.navigateTo({
+          url: `/pages/aftersale/aftersale?orderNo=${encodeURIComponent(orderNo)}&type=${reqType}`
+        });
       }
     });
   }

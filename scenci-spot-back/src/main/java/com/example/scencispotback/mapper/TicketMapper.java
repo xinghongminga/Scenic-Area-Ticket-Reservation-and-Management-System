@@ -29,13 +29,13 @@ public interface TicketMapper {
     @Select("select * from ticket where id = #{id}")
     Ticket findById(@Param("id") Long id);
 
-    @Insert("insert into ticket(scenic_id, name, image_url, description, ticket_type, price_cent, stock_qty, morning_enabled, afternoon_enabled, valid_from, valid_to, refund_rule_id, status) " +
-        "values(#{scenicId}, #{name}, #{imageUrl}, #{description}, #{ticketType}, #{priceCent}, #{stockQty}, #{morningEnabled}, #{afternoonEnabled}, #{validFrom}, #{validTo}, #{refundRuleId}, #{status})")
+    @Insert("insert into ticket(scenic_id, name, image_url, description, ticket_type, price_cent, stock_qty, morning_enabled, afternoon_enabled, valid_date, refund_rule_id, status) " +
+        "values(#{scenicId}, #{name}, #{imageUrl}, #{description}, #{ticketType}, #{priceCent}, #{stockQty}, #{morningEnabled}, #{afternoonEnabled}, #{validDate}, #{refundRuleId}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Ticket ticket);
 
-    @Update("update ticket set name=#{name}, image_url=#{imageUrl}, description=#{description}, ticket_type=#{ticketType}, price_cent=#{priceCent}, stock_qty=#{stockQty}, morning_enabled=#{morningEnabled}, afternoon_enabled=#{afternoonEnabled}, valid_from=#{validFrom}, " +
-        "valid_to=#{validTo}, refund_rule_id=#{refundRuleId}, updated_at=now() where id=#{id}")
+    @Update("update ticket set name=#{name}, image_url=#{imageUrl}, description=#{description}, ticket_type=#{ticketType}, price_cent=#{priceCent}, stock_qty=#{stockQty}, morning_enabled=#{morningEnabled}, afternoon_enabled=#{afternoonEnabled}, valid_date=#{validDate}, " +
+        "refund_rule_id=#{refundRuleId}, updated_at=now() where id=#{id}")
     int update(Ticket ticket);
 
     @Update("update ticket set status=#{status}, updated_at=now() where id=#{id}")

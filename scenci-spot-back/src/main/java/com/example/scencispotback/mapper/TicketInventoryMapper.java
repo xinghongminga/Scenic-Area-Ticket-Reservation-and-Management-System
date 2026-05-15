@@ -25,6 +25,20 @@ public interface TicketInventoryMapper {
         "order by i.visit_date asc, i.timeslot_id asc")
     List<TicketInventoryRow> listAvailableByTicketFromDate(@Param("ticketId") Long ticketId, @Param("startDate") LocalDate startDate);
 
+    @Select("select i.id, i.ticket_id, tk.name as ticket_name, tk.price_cent as ticket_price_cent, " +
+        "tk.morning_enabled as ticket_morning_enabled, tk.afternoon_enabled as ticket_afternoon_enabled, " +
+        "tk.valid_date as ticket_valid_date, i.visit_date, i.timeslot_id, ts.name as timeslot_name, " +
+        "i.total_qty, i.sold_qty, i.locked_qty, i.status " +
+        "from ticket_inventory i " +
+        "join timeslot ts on i.timeslot_id=ts.id " +
+        "join ticket tk on i.ticket_id=tk.id " +
+        "where tk.scenic_id=#{scenicId} and tk.price_cent=#{priceCent} and tk.status=1 " +
+        "and i.visit_date>=#{startDate} and i.status=1 and (i.total_qty - i.sold_qty - i.locked_qty) > 0 " +
+        "order by tk.id asc, i.visit_date asc, i.timeslot_id asc")
+    List<TicketInventoryRow> listAvailableByPriceFromDate(@Param("scenicId") Long scenicId,
+                                                          @Param("priceCent") Integer priceCent,
+                                                          @Param("startDate") LocalDate startDate);
+
     @Select("select * from ticket_inventory where ticket_id=#{ticketId} and visit_date=#{visitDate} and timeslot_id=#{timeslotId} for update")
     TicketInventoryRow lockOne(@Param("ticketId") Long ticketId,
                                @Param("visitDate") LocalDate visitDate,

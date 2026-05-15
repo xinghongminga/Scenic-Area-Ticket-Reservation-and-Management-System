@@ -122,7 +122,7 @@ onMounted(load);
         </div>
         <el-empty v-else description="暂无日客流数据" />
 
-        <el-table v-if="state.data?.trend?.length" :data="pagedDailyTrend" border stripe class="table" size="small">
+        <el-table v-if="state.data?.trend?.length" :data="pagedDailyTrend" border stripe class="table data-table" size="small">
           <el-table-column prop="statMinute" label="分钟" min-width="160" />
           <el-table-column prop="inCount" label="入园" width="90" align="right" />
           <el-table-column prop="outCount" label="出园" width="90" align="right" />
@@ -146,7 +146,7 @@ onMounted(load);
         </div>
         <el-empty v-else description="暂无月客流数据" />
 
-        <el-table v-if="state.data?.monthlyTrend?.length" :data="pagedMonthlyTrend" border stripe class="table" size="small">
+        <el-table v-if="state.data?.monthlyTrend?.length" :data="pagedMonthlyTrend" border stripe class="table data-table" size="small">
           <el-table-column prop="statDate" label="日期" min-width="120" />
           <el-table-column prop="inCount" label="入园" width="100" align="right" />
           <el-table-column prop="outCount" label="出园" width="100" align="right" />
@@ -167,8 +167,8 @@ onMounted(load);
 </template>
 
 <style scoped>
-.head h3 { margin: 0; }
-.head p { margin: 8px 0 0; color: #64748b; font-size: 13px; }
+.head h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
+.head p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
 .toolbar { display: flex; gap: 10px; margin: 4px 0 14px; align-items: center; }
 .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .warn { margin-bottom: 12px; }
@@ -176,6 +176,27 @@ onMounted(load);
 .chart-container { height: 360px; margin: 12px 0; }
 .chart { width: 100%; height: 100%; }
 .table { margin-top: 8px; }
+.data-table {
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 15px;
+}
+.data-table :deep(th.el-table__cell) {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 600;
+}
+.data-table :deep(td.el-table__cell) {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.data-table :deep(.cell) {
+  line-height: 1.5;
+}
+.data-table :deep(.el-table__body tr:hover > td) {
+  background: #f7faff;
+}
 .pager { display: flex; justify-content: center; margin-top: 12px; }
 
 @media (max-width: 768px) {

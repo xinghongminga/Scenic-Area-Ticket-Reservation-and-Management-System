@@ -1,4 +1,4 @@
-const { request } = require('../../utils/request');
+const { request, normalizeImageUrl } = require('../../utils/request');
 const { consumeFlashNotice, hideTopNotice, pushFlashNotice, showTopNotice } = require('../../utils/notice');
 
 const ORDER_STATUS_TEXT = {
@@ -103,7 +103,7 @@ Page({
           role: me?.role || cached.role || 'TOURIST',
           roleText: ROLE_TEXT[me?.role || cached.role || 'TOURIST'] || (me?.role || cached.role || 'TOURIST'),
           phone: cached.phone || '',
-          avatarUrl: cached.avatarUrl || ''
+          avatarUrl: normalizeImageUrl(cached.avatarUrl || '')
         }
       });
     } catch (e) {
@@ -114,7 +114,7 @@ Page({
           role: cached.role || 'TOURIST',
           roleText: ROLE_TEXT[cached.role || 'TOURIST'] || (cached.role || 'TOURIST'),
           phone: cached.phone || '',
-          avatarUrl: cached.avatarUrl || ''
+          avatarUrl: normalizeImageUrl(cached.avatarUrl || '')
         }
       });
     }
@@ -152,7 +152,7 @@ Page({
         amountYuanText: (Number(item.totalAmountCent || 0) / 100).toFixed(2),
         statusText: ORDER_STATUS_TEXT[item.status] || item.status,
         ticketName: item.ticketName || '门票',
-        ticketImageUrl: item.ticketImageUrl || ''
+        ticketImageUrl: normalizeImageUrl(item.ticketImageUrl || '')
       }));
     this.setData({ orders: list });
   },
@@ -212,31 +212,13 @@ Page({
   applyAftersale(e) {
     const orderNo = e.currentTarget.dataset.orderno;
     if (!orderNo) return;
-    const reasons = ['行程变更', '重复下单', '临时有事无法出行', '其他原因'];
+    const typeList = ['申请退款', '申请改签'];
     wx.showActionSheet({
-      itemList: reasons,
+      itemList: typeList,
       success: (res) => {
-        const reason = reasons[res.tapIndex] || '其他原因';
-        wx.showModal({
-          title: '申请售后',
-          content: `订单 ${orderNo}\n原因：${reason}\n确认提交申请吗？`,
-          confirmText: '确定',
-          cancelText: '取消',
-          success: async (r) => {
-            if (!r.confirm) return;
-            try {
-              await request('/api/aftersale', 'POST', {
-                orderNo,
-                reqType: 'REFUND',
-                reason
-              });
-              wx.showToast({ title: '申请已提交', icon: 'success' });
-              this.setData({ section: 'aftersale' });
-              this.loadAftersales();
-            } catch (err) {
-              wx.showToast({ title: err.message, icon: 'none' });
-            }
-          }
+        const reqType = res.tapIndex === 1 ? 'RESCHEDULE' : 'REFUND';
+        wx.navigateTo({
+          url: `/pages/aftersale/aftersale?orderNo=${encodeURIComponent(orderNo)}&type=${reqType}`
         });
       }
     });

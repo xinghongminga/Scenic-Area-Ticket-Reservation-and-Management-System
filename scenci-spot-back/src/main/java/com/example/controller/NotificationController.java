@@ -1,6 +1,7 @@
-package com.example.scencispotback.controller;
+package com.example.scencispotback.api.user;
 
 import com.example.scencispotback.common.ApiResponse;
+import com.example.scencispotback.common.BizException;
 import com.example.scencispotback.security.UserContext;
 import com.example.scencispotback.security.LoginUser;
 import com.example.scencispotback.domain.Notification;
@@ -104,7 +105,10 @@ public class NotificationController {
 
     private Long currentUserId() {
         LoginUser user = UserContext.get();
-        return user == null ? 0L : user.userId();
+        if (user == null || user.userId() == null) {
+            throw new BizException("请先登录");
+        }
+        return user.userId();
     }
 
     private Notification requireOwnedNotification(Long id) {

@@ -15,6 +15,7 @@ public class AftersaleRequest {
     private String auditComment;
     private LocalDate targetVisitDate;
     private Long targetTimeslotId;
+    private Long targetTicketId;
     private LocalDateTime createdAt;
 
     public Long getId() {
@@ -103,6 +104,14 @@ public class AftersaleRequest {
 
     public void setTargetTimeslotId(Long targetTimeslotId) {
         this.targetTimeslotId = targetTimeslotId;
+    }
+
+    public Long getTargetTicketId() {
+        return targetTicketId;
+    }
+
+    public void setTargetTicketId(Long targetTicketId) {
+        this.targetTicketId = targetTicketId;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -4,9 +4,9 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 INSERT INTO scenic_area (id, name, address, open_time_desc, contact_phone, status)
 VALUES
-  (2, '游乐园', '示例景区-游乐园区', '09:00-20:00', '010-88886666', 1),
-  (3, '动物园', '示例景区-动物园区', '08:30-18:00', '010-88886666', 1),
-  (4, '水族馆', '示例景区-水族馆区', '09:30-21:00', '010-88886666', 1)
+  (2, '游乐园', '游乐园区', '09:00-20:00', '010-88886666', 1),
+  (3, '动物园', '动物园区', '08:30-18:00', '010-88886666', 1),
+  (4, '水族馆', '水族馆区', '09:30-21:00', '010-88886666', 1)
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 INSERT INTO timeslot (id, scenic_id, name, start_time, end_time, status)
@@ -27,13 +27,6 @@ VALUES
   (4, 'AUDITOR', 1, 1, 'ACCOUNT', NULL, 'auditor', 'auditor123', '票务审核员')
 ON DUPLICATE KEY UPDATE nickname = VALUES(nickname);
 
-INSERT INTO ticket (id, scenic_id, name, ticket_type, price_cent, valid_from, valid_to, refund_rule_id, status)
-VALUES
-  (1, 1, '成人票', 'SINGLE', 12000, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY), 1, 1),
-  (2, 1, '学生票', 'DISCOUNT', 8000, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY), 1, 1),
-  (3, 1, '双人票', 'DOUBLE', 22000, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY), 1, 1),
-  (4, 1, '团体票', 'GROUP', 50000, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY), 1, 1)
-ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 INSERT INTO ticket_project (ticket_id, project_id)
 SELECT 1, 2 FROM dual

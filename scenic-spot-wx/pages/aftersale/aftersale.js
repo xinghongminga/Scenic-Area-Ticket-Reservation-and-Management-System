@@ -11,16 +11,24 @@ const STATUS_TEXT = {
   REJECTED: '已拒绝'
 };
 
+const REASON_OPTIONS = {
+  REFUND: ['行程变更', '重复下单', '临时有事无法出行', '其他原因'],
+  RESCHEDULE: ['出行时间调整', '行程延后', '临时冲突', '其他原因']
+};
+
 Page({
   data: {
     orderNo: '',
     reason: '',
+    reasonIndex: 0,
+    reasonOptions: REASON_OPTIONS.REFUND,
     types: [
       { key: 'REFUND', label: '退款' },
       { key: 'RESCHEDULE', label: '改签' }
     ],
     typeIndex: 0,
     loadingReschedule: false,
+    rescheduleModalVisible: false,
     rescheduleOptions: [],
     availableDateRange: [],
     targetDateIndex: 0,
@@ -28,6 +36,9 @@ Page({
     targetTimeslotRange: [],
     targetTimeslotIds: [],
     targetTimeslotIndex: 0,
+    targetTicketId: '',
+    targetTicketName: '',
+    targetTicketPriceYuan: '',
     statusTabs: [
       { key: 'ALL', label: '全部' },
       { key: 'SUBMITTED', label: '处理中' },
@@ -42,6 +53,19 @@ Page({
     if (options && options.orderNo) {
       this.setData({ orderNo: options.orderNo });
     }
+    if (options && options.type) {
+      const nextIndex = options.type === 'RESCHEDULE' ? 1 : 0;
+      this.setData({
+        typeIndex: nextIndex,
+        reasonOptions: REASON_OPTIONS[options.type] || REASON_OPTIONS.REFUND
+      });
+      this.syncReasonByIndex(0, REASON_OPTIONS[options.type] || REASON_OPTIONS.REFUND);
+      if (options.type === 'RESCHEDULE' && options.orderNo) {
+        this.loadRescheduleOptions();
+      }
+      return;
+    }
+    this.syncReasonByIndex(0, REASON_OPTIONS.REFUND);
   },
   onShow() {
     this.load();
@@ -52,13 +76,29 @@ Page({
   },
   resetRescheduleForm() {
     this.setData({
+      rescheduleModalVisible: false,
       rescheduleOptions: [],
       availableDateRange: [],
       targetDateIndex: 0,
       targetVisitDate: '',
       targetTimeslotRange: [],
       targetTimeslotIds: [],
-      targetTimeslotIndex: 0
+      targetTimeslotIndex: 0,
+      targetTicketId: '',
+      targetTicketName: '',
+      targetTicketPriceYuan: ''
+    });
+  },
+  getReasonOptions() {
+    const reqType = this.getReqType();
+    return REASON_OPTIONS[reqType] || REASON_OPTIONS.REFUND;
+  },
+  syncReasonByIndex(index, options) {
+    const reasons = options || this.getReasonOptions();
+    const safeIndex = Math.max(0, Math.min(index, reasons.length - 1));
+    this.setData({
+      reasonIndex: safeIndex,
+      reason: reasons[safeIndex] || ''
     });
   },
   syncTimeslotsByDateIndex(index) {
@@ -69,7 +109,10 @@ Page({
       targetVisitDate: option ? option.date : '',
       targetTimeslotRange: timeslots.map(t => `${t.timeslotName}(余票${t.remainQty})`),
       targetTimeslotIds: timeslots.map(t => t.timeslotId),
-      targetTimeslotIndex: 0
+      targetTimeslotIndex: 0,
+      targetTicketId: option ? option.ticketId : '',
+      targetTicketName: option ? option.ticketName : '',
+      targetTicketPriceYuan: option ? option.ticketPriceYuan : ''
     });
   },
   onOrderNoInput(e) {
@@ -78,13 +121,18 @@ Page({
       this.resetRescheduleForm();
     }
   },
-  onReasonInput(e) {
-    this.setData({ reason: e.detail.value });
+  onReasonChange(e) {
+    this.syncReasonByIndex(Number(e.detail.value));
   },
   onTypeChange(e) {
     const nextIndex = Number(e.detail.value);
-    this.setData({ typeIndex: nextIndex });
-    if ((this.data.types[nextIndex] || {}).key === 'RESCHEDULE') {
+    const reqType = (this.data.types[nextIndex] || {}).key || 'REFUND';
+    this.setData({
+      typeIndex: nextIndex,
+      reasonOptions: REASON_OPTIONS[reqType] || REASON_OPTIONS.REFUND
+    });
+    this.syncReasonByIndex(0, REASON_OPTIONS[reqType] || REASON_OPTIONS.REFUND);
+    if (reqType === 'RESCHEDULE') {
       if (this.data.orderNo) {
         this.loadRescheduleOptions();
       } else {
@@ -93,6 +141,36 @@ Page({
       return;
     }
     this.resetRescheduleForm();
+  },
+  openRescheduleModal() {
+    if (!this.data.rescheduleOptions.length) {
+      this.loadRescheduleOptions();
+      return;
+    }
+    this.setData({ rescheduleModalVisible: true });
+  },
+  closeRescheduleModal() {
+    this.setData({ rescheduleModalVisible: false });
+  },
+  selectRescheduleDate(e) {
+    this.syncTimeslotsByDateIndex(Number(e.currentTarget.dataset.index));
+  },
+  selectRescheduleTimeslot(e) {
+    const dateIndex = Number(e.currentTarget.dataset.dateIndex);
+    const slotIndex = Number(e.currentTarget.dataset.slotIndex);
+    this.syncTimeslotsByDateIndex(dateIndex);
+    this.setData({ targetTimeslotIndex: slotIndex });
+  },
+  confirmRescheduleChoice() {
+    if (!this.data.targetVisitDate) {
+      wx.showToast({ title: '请先选择改签日期', icon: 'none' });
+      return;
+    }
+    if (!this.data.targetTimeslotRange.length) {
+      wx.showToast({ title: '该日期暂无可用时段', icon: 'none' });
+      return;
+    }
+    this.setData({ rescheduleModalVisible: false });
   },
   onDateChange(e) {
     this.syncTimeslotsByDateIndex(Number(e.detail.value));
@@ -108,7 +186,11 @@ Page({
       }
       this.setData({ loadingReschedule: true });
       const options = await request(`/api/aftersale/reschedule/options?orderNo=${encodeURIComponent(orderNo)}`);
-      const list = options || [];
+      const list = (options || []).map(item => ({
+        ...item,
+        ticketPriceYuan: `￥${((item.ticketPriceCent || 0) / 100).toFixed(2)}`,
+        optionKey: `${item.ticketId || 't'}-${item.date || 'd'}`
+      }));
       if (!list.length) {
         this.resetRescheduleForm();
         wx.showToast({ title: '暂无可改签余票日期', icon: 'none' });
@@ -117,7 +199,8 @@ Page({
       this.setData({
         rescheduleOptions: list,
         availableDateRange: list.map(item => item.date),
-        targetDateIndex: 0
+        targetDateIndex: 0,
+        rescheduleModalVisible: true
       });
       this.syncTimeslotsByDateIndex(0);
     } catch (e) {
@@ -126,6 +209,7 @@ Page({
       this.setData({ loadingReschedule: false });
     }
   },
+  noop() {},
   onStatusTabTap(e) {
     this.setData({ activeStatus: e.currentTarget.dataset.key });
     this.applyFilter();
@@ -133,14 +217,24 @@ Page({
   async submit() {
     try {
       const reqType = this.getReqType();
+      const reason = (this.data.reason || '').trim();
+      if (!this.data.orderNo) {
+        throw new Error('请先输入订单号');
+      }
+      if (!reason) {
+        throw new Error('请选择售后理由');
+      }
       const payload = {
         orderNo: this.data.orderNo,
         reqType,
-        reason: this.data.reason
+        reason
       };
       if (reqType === 'RESCHEDULE') {
         if (!this.data.targetVisitDate) {
           throw new Error('改签请先选择目标日期');
+        }
+        if (!this.data.targetTicketId) {
+          throw new Error('改签请先选择目标票种');
         }
         const targetTimeslotId = this.data.targetTimeslotIds[this.data.targetTimeslotIndex];
         if (!targetTimeslotId) {
@@ -148,11 +242,12 @@ Page({
         }
         payload.targetVisitDate = this.data.targetVisitDate;
         payload.targetTimeslotId = targetTimeslotId;
+        payload.targetTicketId = this.data.targetTicketId;
       }
       await request('/api/aftersale', 'POST', payload);
-      wx.showToast({ title: '提交成功', icon: 'success' });
+      wx.showToast({ title: '已提交审核', icon: 'success' });
       this.resetRescheduleForm();
-      this.setData({ reason: '' });
+      this.setData({ reason: '', reasonIndex: 0 });
       this.load();
     } catch (e) {
       wx.showToast({ title: e.message, icon: 'none' });

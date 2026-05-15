@@ -40,5 +40,8 @@ public interface OrderTicketMapper {
 
     @Update("update order_ticket set status='REFUNDED' where order_id=#{orderId} and status='UNUSED'")
     int refundUnusedByOrderId(@Param("orderId") Long orderId);
+
+    @Update("update order_ticket set ticket_id=#{ticketId} where order_id=#{orderId}")
+    int updateTicketByOrderId(@Param("orderId") Long orderId, @Param("ticketId") Long ticketId);
 }
 

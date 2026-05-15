@@ -29,7 +29,7 @@ const menu = computed(() => {
       { to: '/orders', label: '订单管理' },
       { to: '/verify', label: '核验入园' },
       { to: '/aftersale', label: '售后审核' },
-      { to: '/video-jobs', label: '视频计数任务' },
+      { to: '/video-jobs', label: '景区监控' },
       { to: '/scenic', label: '景区管理' },
       { to: '/users', label: '用户管理' },
       { to: '/config', label: '系统配置' },
@@ -79,16 +79,31 @@ function logout() {
 </template>
 
 <style scoped>
-.layout { min-height: 100vh; display: grid; grid-template-columns: 240px 1fr; }
-.sider { background: linear-gradient(165deg, #0f172a, #1f2937); color: #f9fafb; padding: 20px 14px; display: grid; gap: 12px; align-content: start; }
-.brand { padding: 0 10px 8px; }
-.brand h2 { margin: 0; }
-.brand p { margin: 8px 0 0; color: #cbd5e1; }
+.layout { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; background: #f2f3f5; }
+.sider { background: #304156; color: #e5e7eb; padding: 16px 0; display: grid; gap: 10px; align-content: start; box-shadow: 2px 0 8px rgba(15, 23, 42, 0.12); }
+.brand { padding: 0 16px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.brand h2 { margin: 0; font-size: 20px; letter-spacing: 0.6px; color: #f9fafb; }
+.brand p { margin: 6px 0 0; color: #9ca3af; font-size: 13px; }
 .menu { border-right: none; background: transparent; }
-.menu :deep(.el-menu-item) { color: #d1fae5; border-radius: 10px; margin: 4px 8px; }
-.menu :deep(.el-menu-item.is-active) { color: #0f172a; background: #99f6e4; }
-.menu :deep(.el-menu-item:hover) { background: rgba(255, 255, 255, 0.12); }
-.content { padding: 20px; background: linear-gradient(120deg, #f4f8fb, #f6f1e8); }
+.menu :deep(.el-menu-item) { color: #cfd8e3; margin: 4px 8px; height: 44px; line-height: 44px; font-size: 15px; font-weight: 500; border-radius: 4px; transition: background 0.15s ease, color 0.15s ease; }
+.menu :deep(.el-menu-item.is-active) { color: #ffffff; background: #409eff; }
+.menu :deep(.el-menu-item:hover) { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.logout-btn {
+  width: calc(100% - 16px);
+  margin: 6px 8px 0;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 14px;
+  background: rgba(239, 68, 68, 0.92);
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.22);
+}
+.logout-btn:hover,
+.logout-btn:focus {
+  color: #ffffff;
+  background: #dc2626;
+  border-color: #dc2626;
+}
+.content { padding: 20px; background: #f2f3f5; }
 
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }

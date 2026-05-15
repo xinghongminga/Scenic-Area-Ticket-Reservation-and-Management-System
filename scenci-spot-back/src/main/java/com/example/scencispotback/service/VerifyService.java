@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.LocalDate;
 
 @Service
 public class VerifyService {
@@ -102,14 +103,18 @@ public class VerifyService {
         if (!"UNUSED".equals(orderTicket.getStatus())) {
             throw new BizException("该电子票已核销或已退款");
         }
-        int updated = orderTicketMapper.markUsed(orderTicket.getId(), method);
-        if (updated == 0) {
-            throw new BizException("核验失败");
-        }
 
         TicketOrder order = ticketOrderMapper.findById(orderTicket.getOrderId());
         if (order == null) {
             throw new BizException("订单不存在");
+        }
+        if (order.getVisitDate() == null || !LocalDate.now().equals(order.getVisitDate())) {
+            throw new BizException("电子票仅可在预约日期当天使用");
+        }
+
+        int updated = orderTicketMapper.markUsed(orderTicket.getId(), method);
+        if (updated == 0) {
+            throw new BizException("核验失败");
         }
 
         int unused = orderTicketMapper.countUnusedByOrderId(order.getId());

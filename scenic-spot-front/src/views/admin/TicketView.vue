@@ -42,8 +42,7 @@ const defaultForm = () => ({
   afternoonStockQty: 100,
   morningEnabled: 1,
   afternoonEnabled: 1,
-  validFrom: '',
-  validTo: '',
+  validDate: '',
   refundRuleId: null
 });
 
@@ -113,6 +112,9 @@ function mustValidForm() {
   if (state.form.afternoonStockQty === '' || Number(state.form.afternoonStockQty) < 0) throw new Error('下午库存不能小于 0');
   if (!state.form.morningEnabled && !state.form.afternoonEnabled) throw new Error('至少开放一个场次');
   if (!Array.isArray(state.form.projectIds) || state.form.projectIds.length === 0) throw new Error('请至少选择一个景区项目');
+  if (!state.form.validDate) {
+    throw new Error('请选择有效日期');
+  }
 }
 
 async function loadProjects() {
@@ -126,6 +128,7 @@ async function loadProjects() {
 
 async function load() {
   const params = new URLSearchParams({ scenicId: '1' });
+  if (state.inventoryDate) params.set('date', state.inventoryDate);
   if (state.searchKeyword) params.set('keyword', state.searchKeyword);
   const list = await request(`/api/admin/tickets?${params.toString()}`);
   state.list = (list || []).map((item) => ({ ...item, morningRemain: 0, afternoonRemain: 0 }));
@@ -137,12 +140,17 @@ function openCreateModal() {
   state.modalTitle = '新增门票';
   state.modalMode = 'create';
   state.editingId = null;
-  state.form = defaultForm();
+  state.form = {
+    ...defaultForm(),
+    validDate: state.inventoryDate || formatDate()
+  };
   state.uploadUrl = '';
   state.showModal = true;
 }
 
 function openEditModal(item) {
+  const morningBaseQty = item.morningStockQty ?? item.morningRemain ?? 0;
+  const afternoonBaseQty = item.afternoonStockQty ?? item.afternoonRemain ?? 0;
   state.modalTitle = '编辑门票';
   state.modalMode = 'edit';
   state.editingId = item.id;
@@ -154,12 +162,11 @@ function openEditModal(item) {
     ticketType: normalizeTicketType(item.ticketType || 'SINGLE'),
     priceCent: (item.priceCent || 10000) / 100,
     stockQty: item.stockQty ?? 0,
-    morningStockQty: item.morningRemain ?? item.morningStockQty ?? item.stockQty ?? 0,
-    afternoonStockQty: item.afternoonRemain ?? item.afternoonStockQty ?? item.stockQty ?? 0,
+    morningStockQty: morningBaseQty,
+    afternoonStockQty: afternoonBaseQty,
     morningEnabled: item.morningEnabled ?? 1,
     afternoonEnabled: item.afternoonEnabled ?? 1,
-    validFrom: item.validFrom || '',
-    validTo: item.validTo || '',
+    validDate: item.validDate || state.inventoryDate || formatDate(),
     refundRuleId: item.refundRuleId || null
   };
   state.uploadUrl = item.imageUrl || '';
@@ -188,8 +195,7 @@ async function submitForm() {
       morningEnabled: state.form.morningEnabled ? 1 : 0,
       afternoonEnabled: state.form.afternoonEnabled ? 1 : 0,
       refundRuleId: state.form.refundRuleId || null,
-      validFrom: state.form.validFrom || null,
-      validTo: state.form.validTo || null
+      validDate: state.form.validDate || null
     };
 
     if (state.modalMode === 'create') {
@@ -360,7 +366,7 @@ onMounted(async () => {
       <el-button @click="onResetSearch">重置</el-button>
     </div>
 
-    <el-table :data="pagedList" border stripe>
+      <el-table :data="pagedList" border stripe class="ticket-table">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column label="图片" width="90">
         <template #default="scope">
@@ -368,8 +374,8 @@ onMounted(async () => {
           <span v-else>无图</span>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="名称" min-width="34" />
-      <el-table-column prop="projectNames" label="景区项目" min-width="34">
+      <el-table-column prop="name" label="名称" min-width="140" />
+      <el-table-column prop="projectNames" label="景区项目" min-width="160">
         <template #default="scope">
           <span>{{ scope.row.projectNames || '未绑定' }}</span>
         </template>
@@ -439,7 +445,7 @@ onMounted(async () => {
           </el-select>
         </el-form-item>
         <el-form-item label="价格(元)">
-          <el-input-number v-model="state.form.priceCent" :min="0.01" :step="1" :precision="2" controls-position="right" class="full" />
+          <el-input-number v-model="state.form.priceCent" :min="0.01" :step="1" :precision="2" controls-position="right" class="full form-number" />
         </el-form-item>
         <el-form-item label="上午库存">
           <el-input-number v-model="state.form.morningStockQty" :min="0" controls-position="right" class="full" />
@@ -457,11 +463,8 @@ onMounted(async () => {
         <el-form-item label="退款规则ID(可选)">
           <el-input-number v-model="state.form.refundRuleId" :min="1" controls-position="right" class="full" />
         </el-form-item>
-        <el-form-item label="有效期开始">
-          <el-date-picker v-model="state.form.validFrom" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="full" />
-        </el-form-item>
-        <el-form-item label="有效期结束">
-          <el-date-picker v-model="state.form.validTo" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="full" />
+        <el-form-item label="有效日期">
+          <el-date-picker v-model="state.form.validDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="full" />
         </el-form-item>
         <el-form-item label="图片URL" class="span2">
           <el-input v-model="state.form.imageUrl" placeholder="可手动填写或上传后自动回填" />
@@ -483,22 +486,30 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.ticket-card { border-radius: 14px; }
+.ticket-card { border-radius: 14px; font-size: 16px; }
 .toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .toolbar > div:first-child { flex: 1; }
-.toolbar h3 { margin: 0; }
-.toolbar p { margin: 8px 0 0; color: #64748b; font-size: 13px; }
+.toolbar h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
+.toolbar p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
 .btn-group { display: flex; gap: 8px; align-items: center; }
 .dropdown-label { cursor: pointer; }
 .search-row { display: flex; gap: 10px; margin-bottom: 12px; }
 .search-row .el-input { width: 320px; }
+.ticket-table { width: 100%; font-size: 15px; }
+.ticket-table :deep(th.el-table__cell) { font-size: 15px; font-weight: 600; color: #334155; }
+.ticket-table :deep(td.el-table__cell) { padding-top: 14px; padding-bottom: 14px; }
+.ticket-table :deep(.cell) { line-height: 1.5; }
+.ticket-table :deep(.el-table__header-wrapper) { background: #f8fafc; }
+.ticket-table :deep(.el-table__body tr:hover > td) { background: #f7faff; }
+.ticket-table :deep(.el-button--small) { font-size: 14px; padding: 7px 12px; }
 .pager { display: flex; justify-content: center; margin-top: 12px; }
 .thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; }
 .actions { display: flex; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
-.modal-sub { margin: 6px 0 0; font-size: 13px; color: #64748b; }
+.modal-sub { margin: 6px 0 0; font-size: 15px; color: #64748b; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
 .span2 { grid-column: span 2; }
 .full { width: 100%; }
+.form-number { min-width: 100%; }
 .uploader { margin: 8px 0; display: flex; align-items: center; gap: 10px; }
 .preview { display: block; margin-top: 6px; width: 180px; height: 112px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; }
 

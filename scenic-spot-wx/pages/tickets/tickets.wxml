@@ -1,7 +1,7 @@
 <view class="page">
   <view class="head card">
     <view class="title">景区门票</view>
-    <picker mode="date" value="{{visitDate}}" bindchange="onDateChange">
+    <picker mode="date" value="{{visitDate}}" start="{{minVisitDate}}" end="{{maxVisitDate}}" bindchange="onDateChange">
       <view class="date-pill">出行日期 {{visitDate}}</view>
     </picker>
   </view>
@@ -16,7 +16,7 @@
     <image class="cover" src="{{item.imageUrl || defaultTicketImage}}" mode="aspectFill" />
     <view class="meta">
       <view class="name">{{item.name}}</view>
-      <view class="sub">{{item.ticketTypeText}} | 有效期 {{item.validFrom}} 至 {{item.validTo}}</view>
+      <view class="sub">{{item.ticketTypeText}} | 有效日期 {{item.validDate}}</view>
       <view class="sub">景区项目：{{item.projectNames}}</view>
       <view class="sub">可预订场次：{{item.slotHint}}</view>
       <view class="sub">上午库存：{{item.morningRemain === null ? '-' : item.morningRemain}}</view>

@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.UUID;
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+    private static final int BOOKABLE_DAYS = 14;
 
     private final TicketMapper ticketMapper;
     private final TicketInventoryMapper inventoryMapper;
@@ -79,6 +81,7 @@ public class OrderService {
         if (ticket == null || ticket.getStatus() == 0) {
             throw new BizException("门票不存在或未上架");
         }
+        validateVisitDate(req.visitDate(), ticket);
 
         TicketInventoryRow inv = inventoryMapper.findOne(req.ticketId(), req.visitDate(), req.timeslotId());
         if (inv == null || inv.getStatus() == null || inv.getStatus() != 1) {
@@ -403,5 +406,16 @@ public class OrderService {
     private String genOrderNo() {
         return "OD" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(java.time.LocalDateTime.now())
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+    }
+
+    private void validateVisitDate(LocalDate visitDate, Ticket ticket) {
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(BOOKABLE_DAYS - 1L);
+        if (visitDate.isBefore(today) || visitDate.isAfter(maxDate)) {
+            throw new BizException("仅支持预订未来14天内的日期");
+        }
+        if (ticket.getValidDate() != null && !ticket.getValidDate().equals(visitDate)) {
+            throw new BizException("出行日期不在门票有效期内");
+        }
     }
 }

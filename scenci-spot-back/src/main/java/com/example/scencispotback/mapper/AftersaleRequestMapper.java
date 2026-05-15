@@ -8,8 +8,8 @@ import java.util.List;
 @Mapper
 public interface AftersaleRequestMapper {
 
-    @Insert("insert into aftersale_request(req_no, order_id, user_id, req_type, reason, status, target_visit_date, target_timeslot_id) " +
-        "values(#{reqNo}, #{orderId}, #{userId}, #{reqType}, #{reason}, #{status}, #{targetVisitDate}, #{targetTimeslotId})")
+    @Insert("insert into aftersale_request(req_no, order_id, user_id, req_type, reason, status, target_visit_date, target_timeslot_id, target_ticket_id) " +
+        "values(#{reqNo}, #{orderId}, #{userId}, #{reqType}, #{reason}, #{status}, #{targetVisitDate}, #{targetTimeslotId}, #{targetTicketId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(AftersaleRequest req);
 
@@ -42,11 +42,12 @@ public interface AftersaleRequestMapper {
                     @Param("auditorId") Long auditorId,
                     @Param("auditComment") String auditComment);
 
-    @Update("update aftersale_request set reason=#{reason}, target_visit_date=#{targetVisitDate}, target_timeslot_id=#{targetTimeslotId}, updated_at=now() where id=#{id}")
+    @Update("update aftersale_request set reason=#{reason}, target_visit_date=#{targetVisitDate}, target_timeslot_id=#{targetTimeslotId}, target_ticket_id=#{targetTicketId}, updated_at=now() where id=#{id}")
     int updateContent(@Param("id") Long id,
                       @Param("reason") String reason,
                       @Param("targetVisitDate") java.time.LocalDate targetVisitDate,
-                      @Param("targetTimeslotId") Long targetTimeslotId);
+                      @Param("targetTimeslotId") Long targetTimeslotId,
+                      @Param("targetTicketId") Long targetTicketId);
 
     @Delete("delete from aftersale_request where id=#{id}")
     int deleteById(@Param("id") Long id);

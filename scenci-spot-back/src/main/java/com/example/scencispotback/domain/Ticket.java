@@ -9,8 +9,7 @@ public class Ticket {
     private String imageUrl;
     private String ticketType;
     private Integer priceCent;
-    private LocalDate validFrom;
-    private LocalDate validTo;
+    private LocalDate validDate;
     private Long refundRuleId;
     private Integer status;
     private Integer stockQty;
@@ -65,20 +64,12 @@ public class Ticket {
         this.priceCent = priceCent;
     }
 
-    public LocalDate getValidFrom() {
-        return validFrom;
+    public LocalDate getValidDate() {
+        return validDate;
     }
 
-    public void setValidFrom(LocalDate validFrom) {
-        this.validFrom = validFrom;
-    }
-
-    public LocalDate getValidTo() {
-        return validTo;
-    }
-
-    public void setValidTo(LocalDate validTo) {
-        this.validTo = validTo;
+    public void setValidDate(LocalDate validDate) {
+        this.validDate = validDate;
     }
 
     public Long getRefundRuleId() {

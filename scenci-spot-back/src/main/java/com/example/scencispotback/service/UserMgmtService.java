@@ -74,15 +74,20 @@ public class UserMgmtService {
     }
 
     @Transactional
-    public void updateMyProfile(String nickname) {
+    public void updateMyProfile(String nickname, String avatarUrl, String phone) {
         Long userId = UserContext.get().userId();
         UserAccount u = userAccountMapper.findById(userId);
         if (u == null) throw new BizException("用户不存在");
-        userAccountMapper.updateProfile(userId,
-            nickname != null ? nickname : u.getNickname(),
-            u.getFullName(),
-            u.getIdCardNo(),
-            u.getScenicId(), u.getRole());
+        String nextNickname = (nickname == null || nickname.isBlank()) ? u.getNickname() : nickname;
+        String nextAvatarUrl = (avatarUrl == null || avatarUrl.isBlank()) ? u.getAvatarUrl() : avatarUrl;
+        String nextPhone = (phone == null || phone.isBlank()) ? u.getPhone() : phone;
+        if (nextPhone != null && !nextPhone.equals(u.getPhone())) {
+            UserAccount exists = userAccountMapper.findByPhone(nextPhone);
+            if (exists != null && !exists.getId().equals(userId)) {
+                throw new BizException("手机号已被使用");
+            }
+        }
+        userAccountMapper.updateMyProfile(userId, nextNickname, nextAvatarUrl, nextPhone);
     }
 
     @Transactional

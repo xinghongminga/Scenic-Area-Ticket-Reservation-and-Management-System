@@ -21,7 +21,7 @@ public class AliOssService {
     private final String publicBaseUrl;
 
     public AliOssService(@Value("${app.storage.local-base-dir:${user.home}/scenic-spot/uploads}") String localBaseDir,
-                         @Value("${app.storage.public-base-url:http://localhost:8080/uploads}") String publicBaseUrl) {
+                         @Value("${app.storage.public-base-url:http://39.96.52.107:8080/uploads}") String publicBaseUrl) {
         this.localBaseDir = localBaseDir;
         this.publicBaseUrl = publicBaseUrl;
     }

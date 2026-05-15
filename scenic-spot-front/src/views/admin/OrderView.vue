@@ -99,7 +99,7 @@ onMounted(load);
       <el-button @click="resetSearch">重置</el-button>
     </div>
 
-    <el-table :data="pagedList" border stripe v-loading="state.loading" style="margin-top: 10px;">
+    <el-table :data="pagedList" border stripe v-loading="state.loading" class="data-table" style="margin-top: 10px;">
       <el-table-column prop="orderNo" label="订单号" min-width="210" />
       <el-table-column prop="userFullName" label="姓名" width="110" />
       <el-table-column prop="userIdCardNo" label="身份证号" min-width="180" />
@@ -135,10 +135,42 @@ onMounted(load);
 </template>
 
 <style scoped>
+.el-card {
+  border-radius: 16px;
+}
 .head { display: flex; align-items: flex-start; justify-content: space-between; }
-.head h3 { margin: 0; }
-.head p { margin: 8px 0 0; color: #64748b; font-size: 13px; }
+.head h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
+.head p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
 .search-row { display: grid; grid-template-columns: 1fr 180px auto auto; gap: 8px; }
+.data-table {
+  margin-top: 10px;
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 15px;
+}
+.data-table :deep(th.el-table__cell) {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 600;
+}
+.data-table :deep(td.el-table__cell) {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.data-table :deep(.cell) {
+  line-height: 1.5;
+}
+.data-table :deep(.el-table__body tr:hover > td) {
+  background: #f7faff;
+}
+.data-table :deep(.el-tag) {
+  border-radius: 999px;
+  padding: 0 10px;
+  height: 26px;
+  line-height: 24px;
+  font-size: 13px;
+}
 .pager { display: flex; justify-content: center; margin-top: 12px; }
 
 @media (max-width: 900px) {
