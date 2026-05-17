@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDate;
 
+// 库存行实体
 public class TicketInventoryRow {
     private Long id;
     private Long ticketId;

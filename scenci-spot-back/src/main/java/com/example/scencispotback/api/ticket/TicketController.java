@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+// 门票控制器
 public class TicketController {
 
     private final TicketService ticketService;

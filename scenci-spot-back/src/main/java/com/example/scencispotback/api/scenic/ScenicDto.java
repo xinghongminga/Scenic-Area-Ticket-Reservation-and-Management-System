@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalTime;
 
+// 景区 DTO
 public class ScenicDto {
 
     public record ScenicResp(Long id, String name, String address, String openTimeDesc,

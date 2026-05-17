@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 阈值映射
 public interface FlowThresholdMapper {
 
     @Insert("insert into flow_threshold(scenic_id, threshold_type, area_code, value, enabled) values(#{scenicId}, #{thresholdType}, #{areaCode}, #{value}, #{enabled})")

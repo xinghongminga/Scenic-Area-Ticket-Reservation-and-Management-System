@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
+// 用户管理 DTO
 public class UserMgmtDto {
 
     public record UserResp(Long id, String role, Long scenicId, Integer status, String loginType,

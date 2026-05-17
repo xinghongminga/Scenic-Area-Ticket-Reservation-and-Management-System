@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+// 景区服务
 public class ScenicService {
 
     private final ScenicAreaMapper scenicAreaMapper;

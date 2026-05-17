@@ -8,3 +8,10 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+/* 所有表格表头及数据居中 */
+.el-table th .cell,
+.el-table td .cell {
+  text-align: center;
+  justify-content: center;
+}

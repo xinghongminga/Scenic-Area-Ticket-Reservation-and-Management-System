@@ -2,6 +2,7 @@ package com.example.scencispotback.api.auth;
 
 import jakarta.validation.constraints.NotBlank;
 
+// 认证 DTO
 public class AuthDto {
 
     public record SendCodeReq(@NotBlank String phone) {}

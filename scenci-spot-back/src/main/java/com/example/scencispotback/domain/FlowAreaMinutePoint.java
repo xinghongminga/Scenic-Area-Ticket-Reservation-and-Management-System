@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 分区分钟客流点
 public class FlowAreaMinutePoint {
     private Long scenicId;
     private String areaCode;

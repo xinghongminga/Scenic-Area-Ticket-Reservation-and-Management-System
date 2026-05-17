@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// 订单 DTO
 public class OrderDto {
 
     public record CreateOrderReq(@NotNull Long ticketId,

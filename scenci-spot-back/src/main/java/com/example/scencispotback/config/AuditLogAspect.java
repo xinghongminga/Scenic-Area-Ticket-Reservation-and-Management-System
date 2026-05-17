@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 
 @Aspect
 @Component
+// 审计切面
 public class AuditLogAspect {
 
     @Autowired

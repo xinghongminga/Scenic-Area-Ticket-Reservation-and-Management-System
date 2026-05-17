@@ -3,6 +3,7 @@ package com.example.scencispotback.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+// 订单实体
 public class TicketOrder {
     private Long id;
     private String orderNo;

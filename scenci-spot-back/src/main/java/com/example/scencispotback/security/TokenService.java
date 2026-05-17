@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 @Service
+// 令牌服务
 public class TokenService {
 
     private final StringRedisTemplate redisTemplate;

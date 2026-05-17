@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// 客流 DTO
 public class FlowDto {
 
     public record ThresholdUpsertReq(@NotNull Long scenicId,

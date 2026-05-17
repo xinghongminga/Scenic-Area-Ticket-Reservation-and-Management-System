@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 
 @Service
+// 乐观库存服务
 public class InventoryOptimisticService {
 
     private static final DefaultRedisScript<Long> RESERVE_SCRIPT = new DefaultRedisScript<>(

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mapper
+// 分钟流量映射
 public interface FlowMinuteMapper {
 
     @Insert("insert into flow_minute(scenic_id, stat_minute, in_count, out_count, in_park_count) values(#{scenicId}, #{statMinute}, #{inCount}, 0, #{inParkCount}) " +

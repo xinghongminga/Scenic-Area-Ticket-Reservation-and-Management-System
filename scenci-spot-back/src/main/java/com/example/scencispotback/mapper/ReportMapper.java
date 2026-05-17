@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mapper
+// 报表映射
 public interface ReportMapper {
 
     @Select("select ifnull(sum(total_amount_cent),0) from ticket_order where scenic_id=#{scenicId} and created_at between #{start} and #{end} and status in ('PAID','USED','REFUNDING','RESCHEDULING','RESCHEDULED')")

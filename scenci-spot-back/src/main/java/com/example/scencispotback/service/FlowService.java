@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
+// 客流服务
 public class FlowService {
 
     private static final Logger log = LoggerFactory.getLogger(FlowService.class);

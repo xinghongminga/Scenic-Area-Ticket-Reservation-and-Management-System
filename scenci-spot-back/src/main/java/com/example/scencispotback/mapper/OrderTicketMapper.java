@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Update;
 import java.util.List;
 
 @Mapper
+// 订单门票映射
 public interface OrderTicketMapper {
 
     @Insert("insert into order_ticket(order_id, order_item_id, ticket_id, qr_code, verify_code, status) " +

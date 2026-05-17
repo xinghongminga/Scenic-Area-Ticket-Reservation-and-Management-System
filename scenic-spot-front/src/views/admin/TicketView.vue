@@ -118,22 +118,30 @@ function mustValidForm() {
 }
 
 async function loadProjects() {
-  const list = await request('/api/admin/scenic');
-  projectState.list = (list || []).map((item) => ({
-    id: item.id,
-    name: item.name,
-    status: item.status
-  }));
+  try {
+    const list = await request('/api/admin/scenic');
+    projectState.list = (list || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      status: item.status
+    }));
+  } catch (e) {
+    ElMessage.error(e.message || '加载项目列表失败');
+  }
 }
 
 async function load() {
-  const params = new URLSearchParams({ scenicId: '1' });
-  if (state.inventoryDate) params.set('date', state.inventoryDate);
-  if (state.searchKeyword) params.set('keyword', state.searchKeyword);
-  const list = await request(`/api/admin/tickets?${params.toString()}`);
-  state.list = (list || []).map((item) => ({ ...item, morningRemain: 0, afternoonRemain: 0 }));
-  state.page = 1;
-  await refreshInventoryForList();
+  try {
+    const params = new URLSearchParams({ scenicId: '1' });
+    if (state.inventoryDate) params.set('date', state.inventoryDate);
+    if (state.searchKeyword) params.set('keyword', state.searchKeyword);
+    const list = await request(`/api/admin/tickets?${params.toString()}`);
+    state.list = (list || []).map((item) => ({ ...item, morningRemain: 0, afternoonRemain: 0 }));
+    state.page = 1;
+    await refreshInventoryForList();
+  } catch (e) {
+    ElMessage.error(e.message || '加载门票失败');
+  }
 }
 
 function openCreateModal() {
@@ -374,8 +382,8 @@ onMounted(async () => {
           <span v-else>无图</span>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="名称" min-width="140" />
-      <el-table-column prop="projectNames" label="景区项目" min-width="160">
+      <el-table-column prop="name" label="名称" width="150" />
+      <el-table-column prop="projectNames" label="景区项目" width="230">
         <template #default="scope">
           <span>{{ scope.row.projectNames || '未绑定' }}</span>
         </template>
@@ -387,10 +395,10 @@ onMounted(async () => {
         <template #default="scope">{{ (scope.row.priceCent / 100).toFixed(2) }}</template>
       </el-table-column>
       <el-table-column prop="stockQty" label="总库存" width="80" />
-      <el-table-column label="上午/下午库存" width="115">
+      <el-table-column label="上午/下午库存" width="165">
         <template #default="scope">{{ scope.row.morningRemain }} / {{ scope.row.afternoonRemain }}</template>
       </el-table-column>
-      <el-table-column label="场次" width="120">
+      <el-table-column label="场次" width="100">
         <template #default="scope">
           <el-tag v-if="scope.row.morningEnabled === 1" type="success" size="small">上午场</el-tag>
           <el-tag v-if="scope.row.afternoonEnabled === 1" type="warning" size="small" style="margin-left:4px">下午场</el-tag>
@@ -401,7 +409,7 @@ onMounted(async () => {
           <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">{{ scope.row.status === 1 ? '上架' : '下架' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="scope">
           <div class="actions">
             <el-button size="small" @click="openEditModal(scope.row)">编辑</el-button>
@@ -495,7 +503,7 @@ onMounted(async () => {
 .dropdown-label { cursor: pointer; }
 .search-row { display: flex; gap: 10px; margin-bottom: 12px; }
 .search-row .el-input { width: 320px; }
-.ticket-table { width: 100%; font-size: 15px; }
+.ticket-table { width: 100%; font-size: 15px; table-layout: fixed; }
 .ticket-table :deep(th.el-table__cell) { font-size: 15px; font-weight: 600; color: #334155; }
 .ticket-table :deep(td.el-table__cell) { padding-top: 14px; padding-bottom: 14px; }
 .ticket-table :deep(.cell) { line-height: 1.5; }

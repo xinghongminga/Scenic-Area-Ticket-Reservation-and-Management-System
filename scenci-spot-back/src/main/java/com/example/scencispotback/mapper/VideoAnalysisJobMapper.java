@@ -7,6 +7,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 @Mapper
+// 视频分析映射
 public interface VideoAnalysisJobMapper {
 
     @Insert("insert into video_analysis_job(scenic_id, video_path, area_code, direction, sample_ms, status, created_by) values(#{scenicId}, #{videoPath}, #{areaCode}, #{direction}, #{sampleMs}, #{status}, #{createdBy})")

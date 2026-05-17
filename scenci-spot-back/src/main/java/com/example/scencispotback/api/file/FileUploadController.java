@@ -22,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/files")
+// 文件上传控制器
 public class FileUploadController {
 
     private final AliOssService aliOssService;

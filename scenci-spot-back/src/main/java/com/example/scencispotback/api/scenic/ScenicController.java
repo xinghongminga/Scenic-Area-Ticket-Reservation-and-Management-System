@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+// 景区控制器
 public class ScenicController {
 
     private final ScenicService scenicService;

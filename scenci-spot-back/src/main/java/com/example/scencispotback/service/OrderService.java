@@ -33,6 +33,7 @@ import java.util.UUID;
  * 包含：创建订单、支付、查询、删除、二维码生成、订单导出
  */
 @Service
+// 订单服务
 public class OrderService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);

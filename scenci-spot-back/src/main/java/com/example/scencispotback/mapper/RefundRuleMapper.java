@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 退改规则映射
 public interface RefundRuleMapper {
 
     @Select("select * from refund_rule where scenic_id = #{scenicId} order by id asc")

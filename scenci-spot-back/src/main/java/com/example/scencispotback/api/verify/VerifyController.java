@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/verify")
+// 验证码控制器
 public class VerifyController {
 
     private final VerifyService verifyService;

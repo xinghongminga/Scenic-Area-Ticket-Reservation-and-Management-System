@@ -3,6 +3,7 @@ package com.example.scencispotback.api.report;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// 报表 DTO
 public class ReportDto {
 
     public record SalesTicketStat(String ticketName, Integer qty) {}

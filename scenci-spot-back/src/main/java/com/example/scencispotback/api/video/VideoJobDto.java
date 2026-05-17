@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
+// 视频任务 DTO
 public class VideoJobDto {
     public record CreateReq(@NotNull Long scenicId,
                             @NotBlank String videoPath,

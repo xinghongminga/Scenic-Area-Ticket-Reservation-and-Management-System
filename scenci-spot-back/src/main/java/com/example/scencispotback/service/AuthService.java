@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Random;
 
 @Service
+// 鉴权服务
 public class AuthService {
 
     private final StringRedisTemplate redisTemplate;

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 时间段映射
 public interface TimeslotMapper {
 
     @Select("select * from timeslot where scenic_id = #{scenicId} order by start_time asc")

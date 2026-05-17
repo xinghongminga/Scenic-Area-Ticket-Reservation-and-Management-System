@@ -1,5 +1,6 @@
 package com.example.scencispotback.domain;
 
+// 票务项目实体
 public class TicketProject {
     private Long id;
     private Long ticketId;

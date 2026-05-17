@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Service
+// 视频任务服务
 public class VideoJobService {
 
     private final VideoAnalysisJobMapper jobMapper;

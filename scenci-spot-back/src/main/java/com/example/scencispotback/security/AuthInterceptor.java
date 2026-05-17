@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
+// 鉴权拦截器
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final TokenService tokenService;

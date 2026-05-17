@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 @Service
+// OSS 文件服务
 public class AliOssService {
 
     private final String localBaseDir;

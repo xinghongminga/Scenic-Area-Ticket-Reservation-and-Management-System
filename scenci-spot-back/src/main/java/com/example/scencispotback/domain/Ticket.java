@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDate;
 
+// 门票实体
 public class Ticket {
     private Long id;
     private Long scenicId;

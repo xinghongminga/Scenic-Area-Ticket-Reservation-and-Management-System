@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 订单项映射
 public interface TicketOrderItemMapper {
 
     @Insert("insert into ticket_order_item(order_id, ticket_id, ticket_name, unit_price_cent, qty, amount_cent) " +

@@ -148,7 +148,8 @@ loadList();
 </template>
 
 <style scoped>
-.card { background: #fff; border-radius: 14px; padding: 16px; }
+.card { background: #fff; border-radius: 14px; padding: 16px;}
+.card h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a;}
 .tip { margin: 8px 0 12px; color: #64748b; font-size: 13px; }
 .pager { display: flex; justify-content: center; margin-top: 12px; }
 </style>

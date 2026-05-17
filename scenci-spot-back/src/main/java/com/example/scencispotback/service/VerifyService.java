@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 @Service
+// 验证码服务
 public class VerifyService {
 
     private final OrderTicketMapper orderTicketMapper;

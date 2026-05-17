@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Delete;
 import java.time.LocalDateTime;
 
 @Mapper
+// 视频人数映射
 public interface VideoPeopleCountMapper {
 
     @Insert("insert into video_people_count(job_id, scenic_id, area_code, stat_time, people_count) values(#{jobId}, #{scenicId}, #{areaCode}, #{statTime}, #{peopleCount})")

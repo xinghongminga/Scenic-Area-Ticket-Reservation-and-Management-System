@@ -1,5 +1,6 @@
 package com.example.scencispotback.domain;
 
+// 客流阈值实体
 public class FlowThreshold {
     private Long id;
     private Long scenicId;

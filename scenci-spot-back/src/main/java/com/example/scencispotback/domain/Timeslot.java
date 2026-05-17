@@ -3,6 +3,7 @@ package com.example.scencispotback.domain;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 
+// 时间段实体
 public class Timeslot {
     private Long id;
     private Long scenicId;

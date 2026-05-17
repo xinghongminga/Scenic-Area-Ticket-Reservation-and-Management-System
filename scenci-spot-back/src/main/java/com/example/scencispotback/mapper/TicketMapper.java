@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 门票映射
 public interface TicketMapper {
 
     @Select({"<script>",

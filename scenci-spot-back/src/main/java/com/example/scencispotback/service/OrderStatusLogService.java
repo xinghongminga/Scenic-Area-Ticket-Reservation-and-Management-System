@@ -5,6 +5,7 @@ import com.example.scencispotback.security.UserContext;
 import org.springframework.stereotype.Service;
 
 @Service
+// 订单状态日志服务
 public class OrderStatusLogService {
 
     private final OrderStatusLogMapper mapper;

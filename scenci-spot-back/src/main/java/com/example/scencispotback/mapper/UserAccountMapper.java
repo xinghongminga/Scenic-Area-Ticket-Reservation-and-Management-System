@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 用户映射
 public interface UserAccountMapper {
 
     @Select("select * from user_account where id = #{id}")

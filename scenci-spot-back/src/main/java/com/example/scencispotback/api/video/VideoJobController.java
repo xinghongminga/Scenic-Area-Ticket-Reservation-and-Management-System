@@ -11,6 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/video-jobs")
+// 视频任务控制器
 public class VideoJobController {
 
     private final VideoJobService videoJobService;

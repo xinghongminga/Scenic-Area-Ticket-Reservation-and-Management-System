@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+// 门票服务
 public class TicketService {
 
     private final TicketMapper ticketMapper;

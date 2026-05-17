@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 票务项目映射
 public interface TicketProjectMapper {
 
     @Select("select distinct ticket_id from ticket_project where project_id = #{projectId}")

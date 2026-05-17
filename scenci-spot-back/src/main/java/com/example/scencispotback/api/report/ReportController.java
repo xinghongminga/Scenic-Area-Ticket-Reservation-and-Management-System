@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/analyst/report")
+// 报表控制器
 public class ReportController {
 
     private final ReportService reportService;

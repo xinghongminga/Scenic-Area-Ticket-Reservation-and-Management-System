@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 
+// 门票 DTO
 public class TicketDto {
 
     public record TicketQuery(Long scenicId, String ticketType, Integer priceMin, Integer priceMax, String keyword, LocalDate visitDate) {}

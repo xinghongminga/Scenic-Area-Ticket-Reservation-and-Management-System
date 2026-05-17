@@ -1,5 +1,6 @@
 package com.example.scencispotback.common;
 
+// API 响应
 public class ApiResponse<T> {
 
     private boolean success;

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 景区映射
 public interface ScenicAreaMapper {
 
     @Select("select * from scenic_area where status = 1 order by id asc")

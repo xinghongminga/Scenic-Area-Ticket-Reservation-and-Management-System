@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableScheduling
+// 定时任务配置
 public class ScheduleConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduleConfig.class);

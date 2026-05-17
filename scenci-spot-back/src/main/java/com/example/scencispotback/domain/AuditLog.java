@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 审计日志实体
 public class AuditLog {
     private Long id;
     private Long operatorId;

@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 视频分析任务
 public class VideoAnalysisJob {
     private Long id;
     private Long scenicId;

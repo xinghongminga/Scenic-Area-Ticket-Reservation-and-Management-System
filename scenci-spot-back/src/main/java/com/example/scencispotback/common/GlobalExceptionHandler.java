@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+// 全局异常处理
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BizException.class)

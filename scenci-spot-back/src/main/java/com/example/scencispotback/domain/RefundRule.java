@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 退改规则实体
 public class RefundRule {
     private Long id;
     private Long scenicId;

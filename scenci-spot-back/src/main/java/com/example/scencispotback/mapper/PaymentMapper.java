@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
+// 支付映射器
 public interface PaymentMapper {
 
     @Insert("insert into payment(order_id, pay_no, channel, status, amount_cent, gateway_trade_no, mock_payload) " +

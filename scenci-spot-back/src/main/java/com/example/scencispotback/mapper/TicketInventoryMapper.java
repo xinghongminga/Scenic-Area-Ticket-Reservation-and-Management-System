@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
+// 库存映射
 public interface TicketInventoryMapper {
 
     @Select("select i.id, i.ticket_id, i.visit_date, i.timeslot_id, t.name as timeslot_name, i.total_qty, i.sold_qty, i.locked_qty, i.status " +

@@ -9,6 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+// 认证控制器
 public class AuthController {
 
     private final AuthService authService;

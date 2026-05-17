@@ -8,6 +8,7 @@ import org.mybatis.spring.annotation.MapperScan;
 @SpringBootApplication
 @MapperScan("com.example.scencispotback.mapper")
 @EnableAspectJAutoProxy
+// 应用启动类
 public class ScenciSpotBackApplication {
 
     public static void main(String[] args) {

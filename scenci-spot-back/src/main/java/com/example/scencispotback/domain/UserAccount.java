@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 用户账户实体
 public class UserAccount {
     private Long id;
     private String role;

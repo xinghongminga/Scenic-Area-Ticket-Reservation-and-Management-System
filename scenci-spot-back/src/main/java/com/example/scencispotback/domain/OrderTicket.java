@@ -1,5 +1,6 @@
 package com.example.scencispotback.domain;
 
+// 订单门票实体
 public class OrderTicket {
     private Long id;
     private Long orderId;

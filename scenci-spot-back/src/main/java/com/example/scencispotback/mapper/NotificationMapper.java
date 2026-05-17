@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 通知映射
 public interface NotificationMapper {
 
     @Insert("insert into sys_notification(receiver_id, title, content, ntype, created_by) " +

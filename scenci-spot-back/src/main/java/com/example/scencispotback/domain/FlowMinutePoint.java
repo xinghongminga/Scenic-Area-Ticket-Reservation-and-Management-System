@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 分钟客流点实体
 public class FlowMinutePoint {
     private Long scenicId;
     private LocalDateTime statMinute;

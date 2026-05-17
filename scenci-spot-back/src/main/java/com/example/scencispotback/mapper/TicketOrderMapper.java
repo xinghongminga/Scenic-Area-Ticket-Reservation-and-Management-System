@@ -7,6 +7,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 @Mapper
+// 订单映射
 public interface TicketOrderMapper {
 
     @Insert("insert into ticket_order(order_no, scenic_id, user_id, visit_date, timeslot_id, total_amount_cent, status) " +

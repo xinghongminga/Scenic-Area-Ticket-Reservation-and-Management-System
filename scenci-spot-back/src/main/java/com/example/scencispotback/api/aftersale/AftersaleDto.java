@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// 售后 DTO
 public class AftersaleDto {
 
     public record CreateReq(@NotBlank String orderNo,

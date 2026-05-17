@@ -167,6 +167,10 @@ onMounted(load);
 </template>
 
 <style scoped>
+.el-card {
+  border-radius: 16px;
+}
+.head { display: flex; align-items: flex-start; justify-content: space-between; }
 .head h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
 .head p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
 .toolbar { display: flex; gap: 10px; margin: 4px 0 14px; align-items: center; }

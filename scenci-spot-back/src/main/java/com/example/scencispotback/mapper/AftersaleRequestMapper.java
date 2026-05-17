@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 @Mapper
+// 售后映射
 public interface AftersaleRequestMapper {
 
     @Insert("insert into aftersale_request(req_no, order_id, user_id, req_type, reason, status, target_visit_date, target_timeslot_id, target_ticket_id) " +

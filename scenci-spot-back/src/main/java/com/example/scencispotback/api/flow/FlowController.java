@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+// 客流控制器
 public class FlowController {
 
     private final FlowService flowService;

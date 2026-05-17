@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+// 报表服务
 public class ReportService {
 
     private final ReportMapper reportMapper;

@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 @Mapper
+// 审计日志映射
 public interface AuditLogMapper {
 
     @Insert("insert into sys_audit_log(operator_id, operator_role, module, action, target_type, target_id, detail, ip) " +

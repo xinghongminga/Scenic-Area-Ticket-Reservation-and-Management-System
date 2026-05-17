@@ -2,6 +2,7 @@ package com.example.scencispotback.domain;
 
 import java.time.LocalDateTime;
 
+// 景区实体
 public class ScenicArea {
     private Long id;
     private String name;

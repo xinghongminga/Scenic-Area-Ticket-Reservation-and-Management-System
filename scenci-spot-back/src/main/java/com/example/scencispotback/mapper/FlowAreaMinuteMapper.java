@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
+// 分区分钟映射
 public interface FlowAreaMinuteMapper {
 
     @Insert("insert into flow_area_minute(scenic_id, area_code, stat_minute, crowd_count) values(#{scenicId}, #{areaCode}, #{statMinute}, #{crowdCount}) on duplicate key update crowd_count=#{crowdCount}, updated_at=now()")

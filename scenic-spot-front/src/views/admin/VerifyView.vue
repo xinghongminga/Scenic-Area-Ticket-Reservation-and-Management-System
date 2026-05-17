@@ -81,9 +81,13 @@ async function onQrImageChange(uploadFile) {
 </template>
 
 <style scoped>
-.head h3 { margin: 0; }
-.head p { margin: 8px 0 0; color: #64748b; font-size: 13px; }
-.inline { display: grid; grid-template-columns: 140px 1fr 180px 100px; gap: 8px; }
+.el-card {
+  border-radius: 16px;
+}
+.head { display: flex; align-items: flex-start; justify-content: space-between; }
+.head h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
+.head p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
+.inline { display: grid; grid-template-columns: 140px 1fr 180px 100px; gap: 8px; margin-top: 4px; }
 .upload-row { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
 .tips { color: #64748b; font-size: 13px; }
 
