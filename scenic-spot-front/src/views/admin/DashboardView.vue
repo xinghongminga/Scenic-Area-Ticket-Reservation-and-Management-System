@@ -96,7 +96,6 @@ onMounted(load);
     </template>
 
     <div class="toolbar">
-      <el-input-number v-model="form.scenicId" :min="1" controls-position="right" placeholder="景区ID" style="width: 110px" />
       <el-input-number v-model="form.minutes" :min="10" :step="10" controls-position="right" placeholder="分钟范围" style="width: 130px" />
       <el-button type="primary" :loading="state.loading" @click="load">刷新</el-button>
     </div>

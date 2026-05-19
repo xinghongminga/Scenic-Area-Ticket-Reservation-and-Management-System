@@ -6,15 +6,19 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 const activeTab = ref('timeslot');
 const timeslotDialog = ref(false);
 const refundDialog = ref(false);
+const thresholdDialog = ref(false);
 const isEditTimeslot = ref(false);
 const isEditRefund = ref(false);
+const isEditThreshold = ref(false);
 
 const state = reactive({
   timeslots: [],
   refunds: [],
+  thresholds: [],
   scenicId: 1,
   timeslotForm: { id: 0, scenicId: 1, startTime: '08:00', endTime: '18:00', status: 1 },
-  refundForm: { id: 0, scenicId: 1, freeRefundHours: 24, allowReschedule: 1 }
+  refundForm: { id: 0, scenicId: 1, freeRefundHours: 24, allowReschedule: 1 },
+  thresholdForm: { id: 0, scenicId: 1, thresholdType: 'INSTANT_MAX', areaCode: '', value: 1000, enabled: 1 }
 });
 
 const pager = reactive({
@@ -24,6 +28,9 @@ const pager = reactive({
   refundPageSize: 10
 });
 
+pager.thresholdPage = 1;
+pager.thresholdPageSize = 10;
+
 const pagedTimeslots = computed(() => {
   const start = (pager.timeslotPage - 1) * pager.timeslotPageSize;
   return state.timeslots.slice(start, start + pager.timeslotPageSize);
@@ -32,6 +39,11 @@ const pagedTimeslots = computed(() => {
 const pagedRefunds = computed(() => {
   const start = (pager.refundPage - 1) * pager.refundPageSize;
   return state.refunds.slice(start, start + pager.refundPageSize);
+});
+
+const pagedThresholds = computed(() => {
+  const start = (pager.thresholdPage - 1) * pager.thresholdPageSize;
+  return state.thresholds.slice(start, start + pager.thresholdPageSize);
 });
 
 async function loadTimeslots() {
@@ -155,9 +167,69 @@ async function deleteRefund(id) {
 function onScenicChange() {
   if (activeTab.value === 'timeslot') {
     loadTimeslots();
-  } else {
+  } else if (activeTab.value === 'refund') {
     loadRefunds();
+  } else if (activeTab.value === 'threshold') {
+    loadThresholds();
   }
+}
+
+async function loadThresholds() {
+  try {
+    state.thresholds = await request(`/api/admin/flow-threshold?scenicId=${state.scenicId}`);
+    pager.thresholdPage = 1;
+  } catch (e) {
+    ElMessage.error('加载阈值失败');
+  }
+}
+
+function openCreateThreshold() {
+  isEditThreshold.value = false;
+  state.thresholdForm = { id: 0, scenicId: state.scenicId, thresholdType: 'INSTANT_MAX', areaCode: '', value: 1000, enabled: 1 };
+  thresholdDialog.value = true;
+}
+
+function openEditThreshold(row) {
+  isEditThreshold.value = true;
+  state.thresholdForm = { ...row, scenicId: state.scenicId };
+  thresholdDialog.value = true;
+}
+
+async function saveThreshold() {
+  try {
+    const body = {
+      scenicId: state.scenicId,
+      thresholdType: state.thresholdForm.thresholdType,
+      areaCode: state.thresholdForm.areaCode,
+      value: state.thresholdForm.value,
+      enabled: state.thresholdForm.enabled
+    };
+    if (isEditThreshold.value) {
+      await request(`/api/admin/flow-threshold/${state.thresholdForm.id}`, { method: 'PUT', body });
+      ElMessage.success('更新成功');
+    } else {
+      await request('/api/admin/flow-threshold', { method: 'POST', body });
+      ElMessage.success('创建成功');
+    }
+    thresholdDialog.value = false;
+    await loadThresholds();
+  } catch (e) {
+    ElMessage.error('保存失败');
+  }
+}
+
+async function deleteThreshold(id) {
+  ElMessageBox.confirm('确认删除?', '警告', { type: 'warning' })
+    .then(async () => {
+      try {
+        await request(`/api/admin/flow-thresholds/${id}`, { method: 'DELETE' });
+        ElMessage.success('删除成功');
+        await loadThresholds();
+      } catch (e) {
+        ElMessage.error('删除失败');
+      }
+    })
+    .catch(() => {});
 }
 
 loadTimeslots();
@@ -167,10 +239,6 @@ loadTimeslots();
   <div class="card">
     <div class="header">
       <h3>系统配置</h3>
-      <div>
-        <span>选择景区:</span>
-        <el-input-number v-model.number="state.scenicId" @change="onScenicChange" :min="1" style="width: 100px" />
-      </div>
     </div>
 
     <el-tabs v-model="activeTab" @tab-change="onScenicChange">
@@ -234,6 +302,42 @@ loadTimeslots();
           />
         </div>
       </el-tab-pane>
+
+      <el-tab-pane label="客流阈值" name="threshold">
+        <div style="margin-bottom: 12px">
+          <el-button @click="openCreateThreshold" type="primary">+ 添加阈值</el-button>
+        </div>
+        <el-table :data="pagedThresholds" stripe border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="thresholdType" label="类型" width="140">
+            <template #default="{ row }">
+              <span>{{ row.thresholdType === 'INSTANT_MAX' ? '瞬时最大' : row.thresholdType === 'DAILY_MAX' ? '日累计最大' : row.thresholdType }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="areaCode" label="区域编码" width="140" />
+          <el-table-column prop="value" label="阈值" width="120" align="right" />
+          <el-table-column prop="enabled" label="启用" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.enabled === 1 ? 'success' : 'danger'">{{ row.enabled === 1 ? '启用' : '禁用' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180">
+            <template #default="{ row }">
+              <el-button @click="openEditThreshold(row)" link type="primary" size="small">编辑</el-button>
+              <el-button @click="deleteThreshold(row.id)" link type="danger" size="small">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="pager">
+          <el-pagination
+            v-model:current-page="pager.thresholdPage"
+            v-model:page-size="pager.thresholdPageSize"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            :total="state.thresholds.length"
+          />
+        </div>
+      </el-tab-pane>
     </el-tabs>
 
     <el-dialog v-model="timeslotDialog" :title="isEditTimeslot ? '编辑时间段' : '添加时间段'" width="500px">
@@ -266,6 +370,33 @@ loadTimeslots();
       <template #footer>
         <el-button @click="refundDialog = false">取消</el-button>
         <el-button @click="saveRefund" type="primary">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="thresholdDialog" :title="isEditThreshold ? '编辑阈值' : '添加阈值'" width="520px">
+      <el-form label-width="120px">
+        <el-form-item label="阈值类型">
+          <el-select v-model="state.thresholdForm.thresholdType">
+            <el-option label="瞬时最大" value="INSTANT_MAX" />
+            <el-option label="日累计最大" value="DAILY_MAX" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="区域编码">
+          <el-input v-model="state.thresholdForm.areaCode" placeholder="可选：区域标识" />
+        </el-form-item>
+        <el-form-item label="阈值">
+          <el-input-number v-model.number="state.thresholdForm.value" :min="0" style="width: 160px" />
+        </el-form-item>
+        <el-form-item label="是否启用">
+          <el-select v-model.number="state.thresholdForm.enabled" style="width: 160px">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="thresholdDialog = false">取消</el-button>
+        <el-button @click="saveThreshold" type="primary">保存</el-button>
       </template>
     </el-dialog>
   </div>

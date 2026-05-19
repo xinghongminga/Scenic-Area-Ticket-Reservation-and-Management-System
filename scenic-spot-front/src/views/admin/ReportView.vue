@@ -171,7 +171,6 @@ function onTabChange(tab) {
     </template>
 
     <div class="toolbar">
-      <el-input-number v-model="form.scenicId" :min="1" controls-position="right" placeholder="景区ID" style="width: 110px" />
       <el-date-picker
         v-model="form.range"
         type="datetimerange"

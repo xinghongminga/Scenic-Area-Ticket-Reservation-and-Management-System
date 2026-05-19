@@ -44,7 +44,7 @@ app:
     unpaid-ttl-minutes: 30
   storage:
     local-base-dir: ${LOCAL_STORAGE_DIR:${user.home}/scenic-spot/uploads}
-    public-base-url: ${LOCAL_PUBLIC_BASE_URL:http://39.96.52.107:8080/uploads}
+    public-base-url: ${LOCAL_PUBLIC_BASE_URL:http://127.0.0.1:8080/uploads}
   video-upload:
     base-dir: ${VIDEO_UPLOAD_DIR:${user.home}/Desktop/毕业设计/video}
   video-detection:

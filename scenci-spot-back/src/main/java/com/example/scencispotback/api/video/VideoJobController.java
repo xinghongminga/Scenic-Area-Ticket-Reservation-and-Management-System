@@ -22,7 +22,7 @@ public class VideoJobController {
 
     @PostMapping
     public ApiResponse<Map<String, Long>> create(@Valid @RequestBody VideoJobDto.CreateReq req) {
-        Authz.requireRole("ADMIN");
+        Authz.requireRole("ADMIN", "ANALYST");
         return ApiResponse.ok(Map.of("id", videoJobService.create(req)));
     }
 
@@ -34,7 +34,7 @@ public class VideoJobController {
 
     @PostMapping("/{id}/run")
     public ApiResponse<VideoJobDto.RunResp> run(@PathVariable Long id) {
-        Authz.requireRole("ADMIN");
+        Authz.requireRole("ADMIN", "ANALYST");
         return ApiResponse.ok(videoJobService.run(id));
     }
 

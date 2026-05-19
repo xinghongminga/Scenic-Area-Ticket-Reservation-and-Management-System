@@ -33,6 +33,11 @@ function statusText(status) {
   return ORDER_STATUS_TEXT[status] || status;
 }
 
+function formatCent(value) {
+  if (value == null) return '-';
+  return (value / 100).toFixed(2);
+}
+
 async function load() {
   state.loading = true;
   try {
@@ -107,7 +112,9 @@ onMounted(load);
       <el-table-column prop="scenicId" label="景区ID" width="90" />
       <el-table-column prop="visitDate" label="出行日期" width="120" />
       <el-table-column prop="timeslotId" label="时段ID" width="90" />
-      <el-table-column prop="totalAmountCent" label="金额(分)" width="110" />
+      <el-table-column label="金额(元)" width="110">
+        <template #default="scope">{{ formatCent(scope.row.totalAmountCent) }}</template>
+      </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="scope">
           <el-tag :type="scope.row.status === 'PAID' ? 'success' : scope.row.status === 'UNPAID' ? 'warning' : 'info'">

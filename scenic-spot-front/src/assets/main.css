@@ -15,3 +15,19 @@ a {
   text-align: center;
   justify-content: center;
 }
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .el-card { padding: 12px; }
+  .toolbar, .form-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .search-input, .status-select, .table .el-input, .table .el-select { width: 100% !important; }
+  .chart-container { height: 260px; }
+  .chart { height: 100%; }
+  .job-table, .data-table, .table { font-size: 13px; }
+  .job-table :deep(td.el-table__cell),
+  .data-table :deep(td.el-table__cell) { padding-top: 8px; padding-bottom: 8px; }
+  .table, .data-table, .job-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pager { padding: 6px 0; }
+  :root { --el-dialog-width: 90vw; }
+  .el-dialog { max-width: 90vw !important; width: 90vw !important; }
+}

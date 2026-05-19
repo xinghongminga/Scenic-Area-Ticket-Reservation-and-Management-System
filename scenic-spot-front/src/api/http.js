@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://39.96.52.107:8080';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
 
 function handleUnauthorized() {
   localStorage.removeItem('token');

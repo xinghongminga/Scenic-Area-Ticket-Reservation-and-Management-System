@@ -183,7 +183,6 @@ onBeforeUnmount(() => {
       </template>
 
       <div class="form-row">
-        <el-input-number v-model.number="enterForm.scenicId" :min="1" controls-position="right" placeholder="景区ID" style="width: 100px" />
         <el-input v-model="enterForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
         <input ref="enterFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'ENTER')" />
         <el-button :loading="state.uploading === 'ENTER'" @click="triggerPick('ENTER')">选择视频</el-button>
@@ -240,7 +239,6 @@ onBeforeUnmount(() => {
       </template>
 
       <div class="form-row">
-        <el-input-number v-model.number="exitForm.scenicId" :min="1" controls-position="right" placeholder="景区ID" style="width: 100px" />
         <el-input v-model="exitForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
         <input ref="exitFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'EXIT')" />
         <el-button :loading="state.uploading === 'EXIT'" @click="triggerPick('EXIT')">选择视频</el-button>

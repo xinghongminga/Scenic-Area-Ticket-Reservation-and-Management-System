@@ -432,7 +432,7 @@ onMounted(async () => {
       />
     </div>
 
-    <el-dialog v-model="state.showModal" :title="state.modalTitle" width="900px" destroy-on-close>
+    <el-dialog v-model="state.showModal" :title="state.modalTitle" width="900px" destroy-on-close class="ticket-dialog">
       <p class="modal-sub">填写门票信息后保存，支持上传图片并实时预览。</p>
       <el-form label-position="top" class="form-grid">
         <el-form-item label="门票名称">
@@ -520,6 +520,46 @@ onMounted(async () => {
 .form-number { min-width: 100%; }
 .uploader { margin: 8px 0; display: flex; align-items: center; gap: 10px; }
 .preview { display: block; margin-top: 6px; width: 180px; height: 112px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; }
+
+.ticket-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+  overflow: hidden;
+}
+.ticket-dialog :deep(.el-dialog__header) {
+  margin: 0;
+  padding: 22px 24px 8px;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  border-bottom: 1px solid #eef2f7;
+}
+.ticket-dialog :deep(.el-dialog__title) {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.ticket-dialog :deep(.el-dialog__body) {
+  padding: 18px 24px 10px;
+  background: #fff;
+}
+.ticket-dialog :deep(.el-dialog__footer) {
+  padding: 14px 24px 22px;
+  border-top: 1px solid #eef2f7;
+  background: #fff;
+}
+.ticket-dialog :deep(.el-form-item__label) {
+  color: #334155;
+  font-weight: 600;
+}
+.ticket-dialog :deep(.el-input__wrapper),
+.ticket-dialog :deep(.el-select__wrapper),
+.ticket-dialog :deep(.el-input-number__wrapper),
+.ticket-dialog :deep(.el-date-editor.el-input__wrapper) {
+  border-radius: 12px;
+}
+.ticket-dialog :deep(.el-button) {
+  border-radius: 10px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
 
 @media (max-width: 768px) {
   .toolbar { gap: 10px; flex-direction: column; align-items: stretch; }

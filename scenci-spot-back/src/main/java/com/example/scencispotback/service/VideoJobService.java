@@ -19,9 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +27,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,8 +34,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * 视频客流分析任务服务
+ */
 @Service
-// 视频任务服务
 public class VideoJobService {
 
     private final VideoAnalysisJobMapper jobMapper;
@@ -47,21 +45,28 @@ public class VideoJobService {
     private final FlowAreaMinuteMapper flowAreaMinuteMapper;
     private final FlowMinuteMapper flowMinuteMapper;
     private final ObjectMapper objectMapper;
+
+    // 是否开启视频检测
     @Value("${app.video-detection.enabled:false}")
     private boolean videoDetectionEnabled;
 
+    // Python检测服务地址
     @Value("${app.video-detection.base-url:http://127.0.0.1:5001}")
     private String videoDetectionBaseUrl;
 
+    // 接口超时时间
     @Value("${app.video-detection.timeout-ms:120000}")
     private Integer videoDetectionTimeoutMs;
 
+    // 抽帧步长
     @Value("${app.video-detection.frame-step:5}")
     private Integer videoDetectionFrameStep;
 
+    // 异步线程数
     @Value("${app.video-detection.worker-threads:2}")
     private Integer videoDetectionWorkerThreads;
 
+    // 检测任务线程池
     private volatile ExecutorService detectionExecutor;
 
     public VideoJobService(VideoAnalysisJobMapper jobMapper,
@@ -76,6 +81,9 @@ public class VideoJobService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 创建视频分析任务
+     */
     @Transactional
     public Long create(VideoJobDto.CreateReq req) {
         VideoAnalysisJob job = new VideoAnalysisJob();
@@ -90,10 +98,16 @@ public class VideoJobService {
         return job.getId();
     }
 
+    /**
+     * 查询所有任务
+     */
     public List<VideoJobDto.JobResp> list() {
         return jobMapper.listAll().stream().map(this::toResp).toList();
     }
 
+    /**
+     * 删除任务，运行中不可删
+     */
     @Transactional
     public void delete(Long id) {
         VideoAnalysisJob job = jobMapper.findById(id);
@@ -107,6 +121,9 @@ public class VideoJobService {
         jobMapper.deleteById(id);
     }
 
+    /**
+     * 启动执行视频检测任务
+     */
     public VideoJobDto.RunResp run(Long id) {
         VideoAnalysisJob job = jobMapper.findById(id);
         if (job == null) {
@@ -114,8 +131,8 @@ public class VideoJobService {
         }
         LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(10);
         if ("RUNNING".equals(job.getStatus())
-            && job.getUpdatedAt() != null
-            && job.getUpdatedAt().isAfter(staleBefore)) {
+                && job.getUpdatedAt() != null
+                && job.getUpdatedAt().isAfter(staleBefore)) {
             throw new BizException("任务正在运行中");
         }
         int claimed = jobMapper.claimForRunningOrStale(id, staleBefore);
@@ -143,6 +160,9 @@ public class VideoJobService {
         return new VideoJobDto.RunResp(id, "RUNNING", 0, 0);
     }
 
+    /**
+     * 异步执行视频检测核心逻辑
+     */
     private void executeJob(Long id) {
         VideoAnalysisJob job = jobMapper.findById(id);
         if (job == null) {
@@ -173,14 +193,19 @@ public class VideoJobService {
                     continue;
                 }
 
+                // 存入 逐秒/逐采样点 原始人数表
                 videoPeopleCountMapper.insert(job.getId(), job.getScenicId(), areaCode, statTime, count);
+                // 把秒级时间转为整分钟，同分钟内人数累加
                 LocalDateTime minute = statTime.withSecond(0).withNano(0);
                 minuteCount.merge(minute, count, Integer::sum);
             }
 
+            //  将分钟聚合后的数据，更新到区域客流、全局客流表
             for (Map.Entry<LocalDateTime, Integer> e : minuteCount.entrySet()) {
                 int cnt = e.getValue();
+                // 更新【区域分钟客流】
                 flowAreaMinuteMapper.upsert(job.getScenicId(), areaCode, e.getKey(), cnt);
+                // 区分进出方向更新【全局分钟客流】
                 if ("EXIT".equals(direction)) {
                     flowMinuteMapper.upsertOut(job.getScenicId(), e.getKey(), cnt);
                 } else {
@@ -198,6 +223,9 @@ public class VideoJobService {
         }
     }
 
+    /**
+     * 获取线程池，懒加载
+     */
     private ExecutorService getDetectionExecutor() {
         if (detectionExecutor == null) {
             synchronized (this) {
@@ -210,11 +238,17 @@ public class VideoJobService {
         return detectionExecutor;
     }
 
+    /**
+     * 实体转返回DTO
+     */
     private VideoJobDto.JobResp toResp(VideoAnalysisJob job) {
         return new VideoJobDto.JobResp(job.getId(), job.getScenicId(), job.getVideoPath(), job.getAreaCode(),
-            job.getDirection(), job.getSampleMs(), job.getStatus(), job.getErrorMsg(), job.getCreatedAt());
+                job.getDirection(), job.getSampleMs(), job.getStatus(), job.getErrorMsg(), job.getCreatedAt());
     }
 
+    /**
+     * 调用Python服务进行人数检测
+     */
     private List<DetectionPoint> detectPeople(VideoAnalysisJob job,
                                               String areaCode,
                                               String direction,
@@ -226,14 +260,14 @@ public class VideoJobService {
 
         String endpoint = normalizeBaseUrl(videoDetectionBaseUrl) + "/api/detect/people";
         Map<String, Object> payload = Map.of(
-            "jobId", job.getId(),
-            "scenicId", job.getScenicId(),
-            "videoPath", job.getVideoPath(),
-            "areaCode", areaCode,
-            "direction", direction,
-            "sampleMs", sampleMs,
-            "fileSize", fileSize,
-            "frameStep", videoDetectionFrameStep == null ? 5 : videoDetectionFrameStep
+                "jobId", job.getId(),
+                "scenicId", job.getScenicId(),
+                "videoPath", job.getVideoPath(),
+                "areaCode", areaCode,
+                "direction", direction,
+                "sampleMs", sampleMs,
+                "fileSize", fileSize,
+                "frameStep", videoDetectionFrameStep == null ? 5 : videoDetectionFrameStep
         );
 
         try {
@@ -264,6 +298,9 @@ public class VideoJobService {
         }
     }
 
+    /**
+     * 解析检测结果
+     */
     private List<DetectionPoint> parseDetectionPoints(String body) {
         try {
             JsonNode root = objectMapper.readTree(body);
@@ -288,6 +325,9 @@ public class VideoJobService {
         }
     }
 
+    /**
+     * 兼容多种时间格式解析
+     */
     private LocalDateTime parseStatTime(String raw) {
         try {
             return LocalDateTime.parse(raw);
@@ -300,6 +340,9 @@ public class VideoJobService {
         }
     }
 
+    /**
+     * 处理服务地址，去除末尾斜杠
+     */
     private String normalizeBaseUrl(String baseUrl) {
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new BizException("请配置 app.video-detection.base-url");
@@ -307,6 +350,9 @@ public class VideoJobService {
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
+    /**
+     * 统一进出方向字段
+     */
     private String normalizeDirection(String direction) {
         if (direction == null || direction.isBlank()) {
             return "ENTER";
@@ -318,6 +364,9 @@ public class VideoJobService {
         return "ENTER";
     }
 
+    /**
+     * 读取接口响应内容
+     */
     private String readResponseBody(HttpURLConnection connection, int statusCode) throws IOException {
         InputStream inputStream = statusCode >= 400 ? connection.getErrorStream() : connection.getInputStream();
         if (inputStream == null) {
@@ -328,5 +377,6 @@ public class VideoJobService {
         }
     }
 
+    // 检测点记录：时间+人数
     private record DetectionPoint(LocalDateTime statTime, int peopleCount) {}
 }

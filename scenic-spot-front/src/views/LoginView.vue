@@ -12,7 +12,7 @@ const roleOptions = [
   { label: '分析员', value: 'ANALYST' },
   { label: '审核员', value: 'AUDITOR' }
 ];
-const pwdForm = reactive({ role: 'ADMIN', username: 'admin', password: 'admin123' });
+const pwdForm = reactive({ role: 'ADMIN', username: 'admin', password: '123456' });
 
 async function loginByPassword() {
   if (!pwdForm.role) {
