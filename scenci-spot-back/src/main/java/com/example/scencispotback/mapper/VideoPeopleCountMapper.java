@@ -1,9 +1,8 @@
 package com.example.scencispotback.mapper;
 
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Delete;
+import java.time.LocalDateTime;
 // SQL moved to resources/mapper/VideoPeopleCountMapper.xml
 
 @Mapper

@@ -71,7 +71,7 @@ public class TicketController {
     }
 
     /**
-     * 管理员新增门票，返回新建门票 ID。
+     * 管理员新增门票，返回新建门票ID。
      */
     @PostMapping("/api/admin/tickets")
     public ApiResponse<Map<String, Long>> create(@Valid @RequestBody TicketDto.AdminTicketUpsertReq req) {

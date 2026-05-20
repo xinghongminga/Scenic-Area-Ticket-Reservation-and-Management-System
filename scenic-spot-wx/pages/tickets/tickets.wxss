@@ -10,6 +10,26 @@
 	gap: 10rpx;
 }
 
+.filter-bar {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
+.filter-label {
+	font-size: 24rpx;
+	color: #374151;
+}
+
+.filter-pill {
+	background: #eff6ff;
+	border: 1rpx solid #93c5fd;
+	color: #1d4ed8;
+	border-radius: 999rpx;
+	padding: 10rpx 18rpx;
+	font-size: 24rpx;
+}
+
 .search-input {
 	flex: 1;
 	border: 1rpx solid #d1d5db;

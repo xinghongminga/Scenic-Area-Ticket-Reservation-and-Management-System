@@ -14,6 +14,9 @@ public class OrderStatusLogService {
         this.mapper = mapper;
     }
 
+    /**
+     * 记录订单状态变更日志。
+     */
     public void write(Long orderId, String fromStatus, String toStatus, String operatorType, String detailJson) {
         Long operatorId = UserContext.get() == null ? null : UserContext.get().userId();
         mapper.insert(orderId, fromStatus, toStatus, operatorType, operatorId, detailJson);

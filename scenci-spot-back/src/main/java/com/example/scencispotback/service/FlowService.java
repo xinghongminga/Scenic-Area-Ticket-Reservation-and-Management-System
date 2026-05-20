@@ -48,6 +48,9 @@ public class FlowService {
         this.redisTemplate = redisTemplate;
     }
 
+    /**
+     * 新增客流阈值配置。
+     */
     public Long createThreshold(FlowDto.ThresholdUpsertReq req) {
         FlowThreshold threshold = new FlowThreshold();
         threshold.setScenicId(req.scenicId());
@@ -59,6 +62,9 @@ public class FlowService {
         return threshold.getId();
     }
 
+    /**
+     * 更新客流阈值配置。
+     */
     public void updateThreshold(Long id, FlowDto.ThresholdUpsertReq req) {
         FlowThreshold old = flowThresholdMapper.findById(id);
         if (old == null) {
@@ -71,6 +77,9 @@ public class FlowService {
         flowThresholdMapper.update(old);
     }
 
+    /**
+     * 删除客流阈值配置。
+     */
     public void deleteThreshold(Long id) {
         FlowThreshold old = flowThresholdMapper.findById(id);
         if (old == null) {
@@ -79,12 +88,18 @@ public class FlowService {
         flowThresholdMapper.delete(id);
     }
 
+    /**
+     * 查询景区阈值配置列表。
+     */
     public List<FlowDto.ThresholdResp> listThreshold(Long scenicId) {
         return flowThresholdMapper.listByScenicId(scenicId).stream().map(t ->
             new FlowDto.ThresholdResp(t.getId(), t.getScenicId(), t.getThresholdType(), t.getAreaCode(), t.getValue(), t.getEnabled())
         ).toList();
     }
 
+    /**
+     * 获取客流仪表盘数据。
+     */
     public FlowDto.DashboardResp dashboard(Long scenicId, Integer minutes) {
         int rangeMinutes = (minutes == null || minutes < 5) ? 60 : minutes;
         LocalDateTime end = LocalDateTime.now().withSecond(0).withNano(0);
@@ -136,6 +151,9 @@ public class FlowService {
         return new FlowDto.DashboardResp(scenicId, currentInPark, todayInTotal, thisMonthInTotal, trend, monthlyTrend, warnings);
     }
 
+    /**
+     * 根据阈值触发预警通知。
+     */
     private void notifyWarningsIfNeeded(Long scenicId, List<FlowDto.WarningResp> warnings) {
         List<UserAccount> receivers = userAccountMapper.listActiveByRoles(List.of("ADMIN", "ANALYST"));
         if (receivers.isEmpty()) {
@@ -207,6 +225,9 @@ public class FlowService {
         }
     }
 
+    /**
+     * 阈值类型转中文描述。
+     */
     private String thresholdTypeText(String thresholdType) {
         return switch (thresholdType) {
             case "INSTANT_MAX" -> "瞬时客流阈值";

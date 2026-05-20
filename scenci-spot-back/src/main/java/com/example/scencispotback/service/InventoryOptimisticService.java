@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 
 @Service
-// 乐观库存服务
+// 库存服务
 public class InventoryOptimisticService {
 
     private static final DefaultRedisScript<Long> RESERVE_SCRIPT = new DefaultRedisScript<>(
@@ -31,6 +31,9 @@ public class InventoryOptimisticService {
         this.redisTemplate = redisTemplate;
     }
 
+    /**
+     * 预占库存（Redis 原子扣减）。
+     */
     public boolean reserve(Long ticketId, LocalDate visitDate, Long timeslotId, int qty, TicketInventoryRow inventory) {
         String key = key(ticketId, visitDate, timeslotId);
         int remain = Math.max(0, nvl(inventory.getTotalQty()) - nvl(inventory.getSoldQty()) - nvl(inventory.getLockedQty()));
@@ -54,16 +57,25 @@ public class InventoryOptimisticService {
         return false;
     }
 
+    /**
+     * 释放已预占库存。
+     */
     public void release(Long ticketId, LocalDate visitDate, Long timeslotId, int qty) {
         String key = key(ticketId, visitDate, timeslotId);
         redisTemplate.opsForValue().increment(key, qty);
         redisTemplate.expire(key, KEY_TTL);
     }
 
+    /**
+     * 生成库存缓存Key。
+     */
     private String key(Long ticketId, LocalDate visitDate, Long timeslotId) {
         return "inventory:remain:" + ticketId + ":" + visitDate + ":" + timeslotId;
     }
 
+    /**
+     * 空值转0。
+     */
     private int nvl(Integer value) {
         return value == null ? 0 : value;
     }

@@ -8,6 +8,16 @@ Page({
     maxVisitDate: '',
     keyword: '',
     searchKeyword: '',
+    ticketType: '',
+    ticketTypeIndex: 0,
+    ticketTypeOptions: [
+      { label: '全部类别', value: '' },
+      { label: '单人票', value: 'SINGLE' },
+      { label: '家庭票', value: 'FAMILY' },
+      { label: '儿童票', value: 'CHILD' },
+      { label: '学生票', value: 'STUDENT' },
+      { label: '老人票', value: 'SENIOR' }
+    ],
     defaultTicketImage: 'https://via.placeholder.com/300x300.png?text=Ticket',
     processingTicketId: null,
     tickets: []
@@ -128,16 +138,37 @@ Page({
 
   // 重置搜索条件并刷新
   onResetSearch() {
-    this.setData({ keyword: '', searchKeyword: '' });
+    this.setData({
+      keyword: '',
+      searchKeyword: '',
+      ticketType: '',
+      ticketTypeIndex: 0
+    });
+    this.loadTickets();
+  },
+
+  // 切换门票类别筛选
+  onTicketTypeChange(e) {
+    const index = Number(e.detail.value || 0);
+    const option = this.data.ticketTypeOptions[index] || { value: '' };
+    this.setData({ ticketTypeIndex: index, ticketType: option.value || '' });
     this.loadTickets();
   },
 
   // 拉取门票列表并做展示字段格式化
   async loadTickets() {
     try {
-      const query = this.data.searchKeyword
-        ? `/api/tickets?scenicId=1&date=${this.data.visitDate}&keyword=${encodeURIComponent(this.data.searchKeyword)}`
-        : `/api/tickets?scenicId=1&date=${this.data.visitDate}`;
+      const params = [
+        `scenicId=1`,
+        `date=${this.data.visitDate}`
+      ];
+      if (this.data.searchKeyword) {
+        params.push(`keyword=${encodeURIComponent(this.data.searchKeyword)}`);
+      }
+      if (this.data.ticketType) {
+        params.push(`ticketType=${encodeURIComponent(this.data.ticketType)}`);
+      }
+      const query = `/api/tickets?${params.join('&')}`;
       const list = await request(query);
       this.setData({
         tickets: (list || []).map(i => ({
@@ -182,17 +213,19 @@ Page({
   // 下单并支付：先选场次创建订单，再根据用户确认决定立即支付或稍后支付
   async createOrder(e) {
     const id = Number(e.currentTarget.dataset.id);
+    // 如果正在处理这张票（防止用户疯狂点按钮），直接return不执行
     if (this.data.processingTicketId === id) {
       return;
     }
 
     this.setData({ processingTicketId: id });
-
+    // 找到对应门票信息，如果找不到则重置状态并返回
     const item = this.data.tickets.find(t => t.id === id);
     if (!item) {
       this.setData({ processingTicketId: null });
       return;
     }
+    
     try {
       const inv = await request(`/api/tickets/${id}/inventory?date=${this.data.visitDate}`);
       if (!inv || !inv.length) throw new Error('没有可用时段库存');

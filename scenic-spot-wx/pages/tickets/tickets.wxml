@@ -12,6 +12,13 @@
     <button class="btn ghost mini" bindtap="onResetSearch">重置</button>
   </view>
 
+  <view class="card filter-bar">
+    <view class="filter-label">门票类别</view>
+    <picker mode="selector" range="{{ticketTypeOptions}}" range-key="label" value="{{ticketTypeIndex}}" bindchange="onTicketTypeChange">
+      <view class="filter-pill">{{ticketTypeOptions[ticketTypeIndex].label}}</view>
+    </picker>
+  </view>
+
   <view class="goods card" wx:for="{{tickets}}" wx:key="id">
     <image class="cover" src="{{item.imageUrl || defaultTicketImage}}" mode="aspectFill" />
     <view class="meta">

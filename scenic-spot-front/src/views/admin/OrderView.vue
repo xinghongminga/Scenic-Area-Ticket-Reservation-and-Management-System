@@ -10,7 +10,7 @@ const state = reactive({
   loading: false,
   keyword: '',
   status: '',
-  statusOptions: ['UNPAID', 'PAID', 'USED', 'REFUNDED', 'RESCHEDULED', 'REFUNDING', 'RESCHEDULING', 'DELETED']
+  statusOptions: ['UNPAID', 'PAID', 'USED', 'REFUNDING', 'REFUNDED', 'RESCHEDULING', 'RESCHEDULED', 'EXPIRED', 'DELETED']
 });
 
 const pagedList = computed(() => {
@@ -22,10 +22,11 @@ const ORDER_STATUS_TEXT = {
   UNPAID: '待支付',
   PAID: '已支付',
   USED: '已核销',
-  REFUNDED: '已退款',
-  RESCHEDULED: '已改签',
   REFUNDING: '退款中',
+  REFUNDED: '已退款',
   RESCHEDULING: '改签中',
+  RESCHEDULED: '已改签',
+  EXPIRED: '已超时',
   DELETED: '已删除'
 };
 

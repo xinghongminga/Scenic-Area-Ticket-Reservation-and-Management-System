@@ -59,6 +59,9 @@ public class AftersaleService {
     }
 
     @Transactional
+    /**
+     * 提交售后申请并返回工单号。
+     */
     public String submit(AftersaleDto.CreateReq req) {
         TicketOrder order = ticketOrderMapper.findByOrderNo(req.orderNo());
         if (order == null) {
@@ -136,11 +139,17 @@ public class AftersaleService {
         return ar.getReqNo();
     }
 
+    /**
+     * 查询当前用户的售后列表。
+     */
     public List<AftersaleDto.ReqResp> myList() {
         Long userId = UserContext.get().userId();
         return aftersaleRequestMapper.listByUserId(userId).stream().map(this::toResp).toList();
     }
 
+    /**
+     * 查询可改签的日期与时段选项。
+     */
     public List<AftersaleDto.RescheduleOptionResp> rescheduleOptions(String orderNo) {
         TicketOrder order = ticketOrderMapper.findByOrderNo(orderNo);
         if (order == null) {
@@ -201,11 +210,17 @@ public class AftersaleService {
         return resp;
     }
 
+    /**
+     * 管理端查询售后列表。
+     */
     public List<AftersaleDto.ReqResp> allList(AftersaleDto.QueryReq query) {
         return aftersaleRequestMapper.listAllFiltered(query.userPhone(), query.status()).stream().map(this::toResp).toList();
     }
 
     @Transactional
+    /**
+     * 审核员修改售后信息。
+     */
     public void updateByAuditor(String reqNo, AftersaleDto.UpdateReq req) {
         AftersaleRequest ar = aftersaleRequestMapper.lockByReqNo(reqNo);
         if (ar == null) {
@@ -221,6 +236,9 @@ public class AftersaleService {
     }
 
     @Transactional
+    /**
+     * 审核员删除售后工单。
+     */
     public void deleteByAuditor(String reqNo) {
         AftersaleRequest ar = aftersaleRequestMapper.lockByReqNo(reqNo);
         if (ar == null) {
@@ -238,6 +256,9 @@ public class AftersaleService {
     }
 
     @Transactional
+    /**
+     * 审核通过售后申请（退款或改签）。
+     */
     public void approve(String reqNo, String comment) {
         Long auditorId = UserContext.get().userId();
         AftersaleRequest ar = aftersaleRequestMapper.lockByReqNo(reqNo);
@@ -334,6 +355,9 @@ public class AftersaleService {
     }
 
     @Transactional
+    /**
+     * 审核驳回售后申请。
+     */
     public void reject(String reqNo, String comment) {
         Long auditorId = UserContext.get().userId();
         AftersaleRequest ar = aftersaleRequestMapper.lockByReqNo(reqNo);
@@ -350,6 +374,9 @@ public class AftersaleService {
         orderStatusLogService.write(ar.getOrderId(), from, "PAID", "STAFF", "{\"reqNo\":\"" + reqNo + "\"}");
     }
 
+    /**
+     * 转换售后工单为返回对象。
+     */
     private AftersaleDto.ReqResp toResp(AftersaleRequest r) {
         TicketOrder order = ticketOrderMapper.findById(r.getOrderId());
         String orderNo = order == null ? null : order.getOrderNo();
@@ -362,16 +389,25 @@ public class AftersaleService {
             r.getTargetVisitDate(), r.getTargetTimeslotId(), r.getTargetTicketId(), r.getCreatedAt());
     }
 
+    /**
+     * 生成售后工单号。
+     */
     private String genReqNo() {
         return "AR" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
             + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 
+    /**
+     * 生成退款单号。
+     */
     private String genRefundNo() {
         return "RF" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
             + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 
+    /**
+     * 校验改签日期范围。
+     */
     private void validateRescheduleDate(LocalDate targetDate) {
         if (targetDate == null) {
             throw new BizException("改签日期不能为空");

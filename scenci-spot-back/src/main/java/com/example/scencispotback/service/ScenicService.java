@@ -39,11 +39,17 @@ public class ScenicService {
 
     // ========== Scenic Area ==========
 
+    /**
+     * 查询景区列表（管理员可查看全部）。
+     */
     public List<ScenicDto.ScenicResp> listScenics(boolean adminMode) {
         List<ScenicArea> list = adminMode ? scenicAreaMapper.listAllAdmin() : scenicAreaMapper.listAll();
         return list.stream().map(this::toScenicResp).toList();
     }
 
+    /**
+     * 查询单个景区详情。
+     */
     public ScenicDto.ScenicResp getScenic(Long id) {
         ScenicArea s = scenicAreaMapper.findById(id);
         if (s == null) throw new BizException("景区不存在");
@@ -51,6 +57,9 @@ public class ScenicService {
     }
 
     @Transactional
+    /**
+     * 创建景区。
+     */
     public Long createScenic(ScenicDto.ScenicUpsertReq req) {
         ScenicArea s = new ScenicArea();
         s.setName(req.name());
@@ -63,6 +72,9 @@ public class ScenicService {
     }
 
     @Transactional
+    /**
+     * 更新景区信息。
+     */
     public void updateScenic(Long id, ScenicDto.ScenicUpsertReq req) {
         ScenicArea s = scenicAreaMapper.findById(id);
         if (s == null) throw new BizException("景区不存在");
@@ -74,6 +86,9 @@ public class ScenicService {
     }
 
     @Transactional
+    /**
+     * 更新景区状态并同步关联门票状态。
+     */
     public void updateScenicStatus(Long id, Integer status) {
         if (scenicAreaMapper.updateStatus(id, status) == 0) throw new BizException("景区不存在");
         if (status != null && status == 0) {
@@ -86,11 +101,17 @@ public class ScenicService {
 
     // ========== Timeslot ==========
 
+    /**
+     * 查询景区时段列表。
+     */
     public List<ScenicDto.TimeslotResp> listTimeslots(Long scenicId) {
         return timeslotMapper.listByScenicId(scenicId).stream().map(this::toTimeslotResp).toList();
     }
 
     @Transactional
+    /**
+     * 创建景区时段。
+     */
     public Long createTimeslot(ScenicDto.TimeslotUpsertReq req) {
         Timeslot t = new Timeslot();
         t.setScenicId(req.scenicId());
@@ -103,6 +124,9 @@ public class ScenicService {
     }
 
     @Transactional
+    /**
+     * 更新景区时段。
+     */
     public void updateTimeslot(Long id, ScenicDto.TimeslotUpsertReq req) {
         Timeslot t = timeslotMapper.findById(id);
         if (t == null) throw new BizException("时段不存在");
@@ -112,21 +136,33 @@ public class ScenicService {
         timeslotMapper.update(t);
     }
 
+    /**
+     * 禁用指定时段。
+     */
     public void disableTimeslot(Long id) {
         timeslotMapper.updateStatus(id, 0);
     }
 
+    /**
+     * 删除指定时段。
+     */
     public void deleteTimeslot(Long id) {
         timeslotMapper.deleteById(id);
     }
 
     // ========== RefundRule ==========
 
+    /**
+     * 查询退改规则列表。
+     */
     public List<ScenicDto.RefundRuleResp> listRefundRules(Long scenicId) {
         return refundRuleMapper.listByScenicId(scenicId).stream().map(this::toRefundRuleResp).toList();
     }
 
     @Transactional
+    /**
+     * 创建退改规则。
+     */
     public Long createRefundRule(ScenicDto.RefundRuleUpsertReq req) {
         RefundRule r = new RefundRule();
         r.setScenicId(req.scenicId());
@@ -138,6 +174,9 @@ public class ScenicService {
     }
 
     @Transactional
+    /**
+     * 更新退改规则。
+     */
     public void updateRefundRule(Long id, ScenicDto.RefundRuleUpsertReq req) {
         RefundRule r = refundRuleMapper.findById(id);
         if (r == null) throw new BizException("退改规则不存在");
@@ -147,6 +186,9 @@ public class ScenicService {
         refundRuleMapper.update(r);
     }
 
+    /**
+     * 删除退改规则。
+     */
     public void deleteRefundRule(Long id) {
         if (refundRuleMapper.findById(id) == null) throw new BizException("退改规则不存在");
         refundRuleMapper.deleteById(id);
@@ -154,16 +196,25 @@ public class ScenicService {
 
     // ========== Converters ==========
 
+    /**
+     * 转换景区实体为返回对象。
+     */
     private ScenicDto.ScenicResp toScenicResp(ScenicArea s) {
         return new ScenicDto.ScenicResp(s.getId(), s.getName(), s.getAddress(),
             s.getOpenTimeDesc(), s.getContactPhone(), s.getStatus());
     }
 
+    /**
+     * 转换时段实体为返回对象。
+     */
     private ScenicDto.TimeslotResp toTimeslotResp(Timeslot t) {
         return new ScenicDto.TimeslotResp(t.getId(), t.getScenicId(), t.getName(),
             t.getStartTime(), t.getEndTime(), t.getStatus());
     }
 
+    /**
+     * 转换退改规则实体为返回对象。
+     */
     private ScenicDto.RefundRuleResp toRefundRuleResp(RefundRule r) {
         return new ScenicDto.RefundRuleResp(r.getId(), r.getScenicId(), r.getName(),
             r.getFreeRefundHours(), r.getAllowReschedule());

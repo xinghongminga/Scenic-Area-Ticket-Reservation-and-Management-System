@@ -38,6 +38,9 @@ public class VerifyService {
     }
 
     @Transactional
+    /**
+     * 通过核验码验票。
+     */
     public VerifyDto.VerifyResp verifyByCode(VerifyDto.VerifyByCodeReq req) {
         OrderTicket orderTicket = orderTicketMapper.lockByVerifyCode(req.verifyCode());
         if (orderTicket == null) {
@@ -47,6 +50,9 @@ public class VerifyService {
     }
 
     @Transactional
+    /**
+     * 通过二维码内容验票。
+     */
     public VerifyDto.VerifyResp verifyByQr(VerifyDto.VerifyByQrReq req) {
         OrderTicket orderTicket = orderTicketMapper.lockByQrCode(req.qrCode());
         if (orderTicket == null) {
@@ -56,6 +62,9 @@ public class VerifyService {
     }
 
     @Transactional
+    /**
+     * 通过二维码图片验票。
+     */
     public VerifyDto.VerifyResp verifyByQrImage(MultipartFile file, String method) {
         if (file == null || file.isEmpty()) {
             throw new BizException("请上传二维码图片");
@@ -65,6 +74,9 @@ public class VerifyService {
         return verifyByQr(new VerifyDto.VerifyByQrReq(qrCode, normalizeMethod(method, "二维码图片")));
     }
 
+    /**
+     * 规范化核验方式名称。
+     */
     private String normalizeMethod(String method, String defaultMethod) {
         if (method == null || method.isBlank()) {
             return defaultMethod;
@@ -79,6 +91,9 @@ public class VerifyService {
         };
     }
 
+    /**
+     * 从图片中解析二维码内容。
+     */
     private String decodeQrCodeFromImage(MultipartFile file) {
         try {
             BufferedImage image = ImageIO.read(file.getInputStream());
@@ -100,6 +115,9 @@ public class VerifyService {
         }
     }
 
+    /**
+     * 执行验票逻辑并更新订单状态。
+     */
     private VerifyDto.VerifyResp doVerify(OrderTicket orderTicket, String method) {
         if (!"UNUSED".equals(orderTicket.getStatus())) {
             throw new BizException("该电子票已核销或已退款");

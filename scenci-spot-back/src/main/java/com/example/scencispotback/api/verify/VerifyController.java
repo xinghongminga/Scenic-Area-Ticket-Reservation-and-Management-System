@@ -23,18 +23,27 @@ public class VerifyController {
         this.verifyService = verifyService;
     }
 
+    /**
+     * 通过核验码进行验票。
+     */
     @PostMapping("/byCode")
     public ApiResponse<VerifyDto.VerifyResp> byCode(@Valid @RequestBody VerifyDto.VerifyByCodeReq req) {
         Authz.requireRole("ADMIN", "AUDITOR");
         return ApiResponse.ok(verifyService.verifyByCode(req));
     }
 
+    /**
+     * 通过二维码内容进行验票。
+     */
     @PostMapping("/byQr")
     public ApiResponse<VerifyDto.VerifyResp> byQr(@Valid @RequestBody VerifyDto.VerifyByQrReq req) {
         Authz.requireRole("ADMIN", "AUDITOR");
         return ApiResponse.ok(verifyService.verifyByQr(req));
     }
 
+    /**
+     * 上传二维码图片并完成验票。
+     */
     @PostMapping(value = "/byQrImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<VerifyDto.VerifyResp> byQrImage(@RequestParam("file") MultipartFile file,
                                                        @RequestParam(value = "method", required = false) String method) {

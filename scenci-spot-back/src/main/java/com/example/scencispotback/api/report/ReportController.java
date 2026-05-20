@@ -27,6 +27,9 @@ public class ReportController {
     }
 
     @GetMapping("/sales")
+    /**
+     * 查询销售统计报表。
+     */
     public ApiResponse<ReportDto.SalesResp> sales(@RequestParam Long scenicId,
                                                   @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                                   @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
@@ -35,6 +38,9 @@ public class ReportController {
     }
 
     @GetMapping("/flow")
+    /**
+     * 查询客流趋势报表。
+     */
     public ApiResponse<ReportDto.FlowResp> flow(@RequestParam Long scenicId,
                                                 @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                                 @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
@@ -43,6 +49,9 @@ public class ReportController {
     }
 
     @GetMapping("/heatmap")
+    /**
+     * 查询区域热力图数据。
+     */
     public ApiResponse<ReportDto.HeatmapResp> heatmap(@RequestParam Long scenicId,
                                                       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                                       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
@@ -51,6 +60,9 @@ public class ReportController {
     }
 
     @GetMapping("/sales/export")
+    /**
+     * 导出销售报表CSV。
+     */
     public ResponseEntity<byte[]> exportSales(@RequestParam Long scenicId,
                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
@@ -63,6 +75,9 @@ public class ReportController {
     }
 
     @GetMapping("/flow/export")
+    /**
+     * 导出客流报表CSV。
+     */
     public ResponseEntity<byte[]> exportFlow(@RequestParam Long scenicId,
                                              @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                              @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {

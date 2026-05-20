@@ -51,6 +51,9 @@ public class TicketService {
         this.ticketOrderItemMapper = ticketOrderItemMapper;
     }
 
+    /**
+     * 按条件查询门票列表。
+     */
     public List<TicketDto.TicketListResp> list(TicketDto.TicketQuery query, boolean onlyOnline) {
         List<Ticket> tickets = ticketMapper.list(query.scenicId(), query.ticketType(), query.priceMin(), query.priceMax(), query.keyword(), onlyOnline);
         if (tickets.isEmpty()) {
@@ -78,6 +81,9 @@ public class TicketService {
             .toList();
     }
 
+    /**
+     * 查询门票详情并返回库存信息。
+     */
     public TicketDto.TicketDetailResp detail(Long id, LocalDate date) {
         Ticket ticket = ticketMapper.findById(id);
         if (ticket == null) {
@@ -90,6 +96,9 @@ public class TicketService {
         return new TicketDto.TicketDetailResp(toListResp(ticket, projectIds, projectNamesById, latestInventory), inv);
     }
 
+    /**
+     * 查询门票某天的分时段库存。
+     */
     public List<TicketDto.InventoryResp> inventory(Long ticketId, LocalDate date) {
         Ticket ticket = ticketMapper.findById(ticketId);
         if (ticket == null) {
@@ -116,6 +125,9 @@ public class TicketService {
     }
 
     @Transactional
+    /**
+     * 管理员创建门票。
+     */
     public Long create(TicketDto.AdminTicketUpsertReq req) {
         validateProjectIds(req.projectIds());
         Ticket t = new Ticket();
@@ -139,6 +151,9 @@ public class TicketService {
     }
 
     @Transactional
+    /**
+     * 管理员更新门票。
+     */
     public void update(Long id, TicketDto.AdminTicketUpsertReq req) {
         validateProjectIds(req.projectIds());
         Ticket old = ticketMapper.findById(id);
@@ -162,6 +177,9 @@ public class TicketService {
         upsertInventoryByTimeslot(old.getId(), old.getValidDate(), req.stockQty(), req.morningStockQty(), req.afternoonStockQty(), old.getMorningEnabled(), old.getAfternoonEnabled());
     }
 
+    /**
+     * 更新门票上下架状态。
+     */
     public void updateStatus(Long id, Integer status) {
         if (ticketMapper.updateStatus(id, status) == 0) {
             throw new BizException("门票不存在");
@@ -169,6 +187,9 @@ public class TicketService {
     }
 
     @Transactional
+    /**
+     * 删除门票（存在历史订单时不可删）。
+     */
     public void delete(Long id) {
         if (ticketMapper.findById(id) == null) {
             throw new BizException("门票不存在");
@@ -183,6 +204,9 @@ public class TicketService {
     }
 
     @Transactional
+    /**
+     * 手动调整指定门票库存。
+     */
     public void adjustInventory(TicketDto.AdjustInventoryReq req) {
         TicketInventoryRow row = ticketInventoryMapper.lockOne(req.ticketId(), req.visitDate(), req.timeslotId());
         if (row == null) {
@@ -197,6 +221,9 @@ public class TicketService {
 
     // ===== Excel Export =====
 
+    /**
+     * 导出门票列表为Excel。
+     */
     public byte[] exportExcel(Long scenicId) {
         List<Ticket> tickets = ticketMapper.list(scenicId, null, null, null, null, false);
         try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -227,6 +254,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 导出门票导入模板。
+     */
     public byte[] exportImportTemplate() {
         try (XSSFWorkbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = wb.createSheet("门票导入模板");
@@ -259,6 +289,9 @@ public class TicketService {
     // ===== Excel Import (columns: 门票名称, 景区项目, 票种, 价格(元), 上午库存, 下午库存, 场次, 状态, 有效日期, 退款规则ID) =====
 
     @Transactional
+    /**
+     * 从Excel导入门票并返回成功数量。
+     */
     public int importExcel(MultipartFile file) {
         try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = wb.getSheetAt(0);
@@ -328,6 +361,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 解析价格（元）为分。
+     */
     private Integer parsePriceYuanToCent(String value, int lineNo) {
         if (value == null || value.isBlank()) {
             throw new BizException("第" + lineNo + "行价格(元)不能为空");
@@ -343,6 +379,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 解析非负整数，空值返回默认值。
+     */
     private Integer parseNonNegativeInt(String value, int defaultValue, int lineNo, String field) {
         if (value == null || value.isBlank()) {
             return defaultValue;
@@ -358,6 +397,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 解析可为空的Long字段。
+     */
     private Long parseNullableLong(String value, int lineNo, String field) {
         if (value == null || value.isBlank()) {
             return null;
@@ -369,6 +411,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 解析单元格日期。
+     */
     private LocalDate parseLocalDateCell(Row row, int col, int lineNo, String field) {
         Cell cell = row.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
         if (cell == null || cell.getCellType() == CellType.BLANK) {
@@ -384,6 +429,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 解析文本日期为LocalDate。
+     */
     private LocalDate parseLocalDateText(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -401,6 +449,9 @@ public class TicketService {
         return LocalDate.parse(normalized, DateTimeFormatter.ofPattern("yyyy-M-d"));
     }
 
+    /**
+     * 解析上下架状态字段。
+     */
     private Integer parseStatus(String value) {
         if (value == null || value.isBlank()) {
             return 1;
@@ -415,6 +466,9 @@ public class TicketService {
         return 1;
     }
 
+    /**
+     * 解析场次字段为上午/下午开关。
+     */
     private int[] parseTimeslot(String value) {
         if (value == null || value.isBlank()) {
             return new int[] {1, 1};
@@ -432,6 +486,9 @@ public class TicketService {
         return new int[] {1, 1};
     }
 
+    /**
+     * 解析景区项目字段并返回ID列表。
+     */
     private List<Long> parseProjectIds(String cell,
                                        Map<Long, ScenicArea> projectById,
                                        Map<String, Long> projectIdByName,
@@ -468,6 +525,9 @@ public class TicketService {
         return ids;
     }
 
+    /**
+     * 规范化票种名称。
+     */
     private String normalizeTicketType(String ticketType) {
         if (ticketType == null || ticketType.isBlank()) {
             return "SINGLE";
@@ -483,6 +543,9 @@ public class TicketService {
         };
     }
 
+    /**
+     * 票种英文转中文显示。
+     */
     private String toTicketTypeZh(String ticketType) {
         if (ticketType == null || ticketType.isBlank()) {
             return "";
@@ -497,6 +560,9 @@ public class TicketService {
         };
     }
 
+    /**
+     * 获取单元格文本值。
+     */
     private String getCellString(Row row, int col) {
         Cell cell = row.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
         if (cell == null) return null;
@@ -508,6 +574,9 @@ public class TicketService {
         };
     }
 
+    /**
+     * 构造列表页门票返回对象。
+     */
     private TicketDto.TicketListResp toListResp(Ticket t,
                                                List<Long> projectIds,
                                                Map<Long, String> projectNamesById,
@@ -527,6 +596,9 @@ public class TicketService {
             projectIds, projectNames);
     }
 
+    /**
+     * 查询每个门票的最新库存信息。
+     */
     private Map<Long, Map<Long, TicketInventoryRow>> loadInventoryByTicketDate(List<Ticket> tickets) {
         Map<Long, Map<Long, TicketInventoryRow>> result = new HashMap<>();
         for (Ticket ticket : tickets) {
@@ -542,6 +614,9 @@ public class TicketService {
         return result;
     }
 
+    /**
+     * 判断指定日期是否还有可售库存。
+     */
     private boolean hasInventoryOnDate(Long ticketId, LocalDate date) {
         List<TicketInventoryRow> rows = ticketInventoryMapper.listByTicketAndDate(ticketId, date);
         for (TicketInventoryRow row : rows) {
@@ -553,6 +628,9 @@ public class TicketService {
         return false;
     }
 
+    /**
+     * 查询门票关联的景区项目ID。
+     */
     private Map<Long, List<Long>> loadProjectIdsByTicket(List<Ticket> tickets) {
         List<Long> ticketIds = tickets.stream().map(Ticket::getId).toList();
         if (ticketIds.isEmpty()) {
@@ -566,6 +644,9 @@ public class TicketService {
         return byTicket;
     }
 
+    /**
+     * 查询景区项目名称映射。
+     */
     private Map<Long, String> loadProjectNameById(List<Long> projectIds) {
         if (projectIds == null || projectIds.isEmpty()) {
             return Collections.emptyMap();
@@ -574,6 +655,9 @@ public class TicketService {
         return projects.stream().collect(Collectors.toMap(ScenicArea::getId, ScenicArea::getName));
     }
 
+    /**
+     * 校验景区项目ID有效性。
+     */
     private void validateProjectIds(List<Long> projectIds) {
         if (projectIds == null || projectIds.isEmpty()) {
             throw new BizException("请至少选择一个景区项目");
@@ -588,6 +672,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 绑定门票与景区项目关系。
+     */
     private void bindTicketProjects(Long ticketId, List<Long> projectIds) {
         List<Long> ids = projectIds == null ? List.of() : projectIds.stream().filter(Objects::nonNull).distinct().toList();
         for (Long projectId : ids) {
@@ -595,6 +682,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 确保至少开放一个场次。
+     */
     private void ensureAtLeastOneTimeslotEnabled(Integer morningEnabled, Integer afternoonEnabled) {
         int m = morningEnabled == null ? 0 : morningEnabled;
         int a = afternoonEnabled == null ? 0 : afternoonEnabled;
@@ -603,6 +693,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 按场次写入或更新库存。
+     */
     private void upsertInventoryByTimeslot(Long ticketId,
                                            LocalDate validDate,
                                            Integer stockQty,
@@ -622,6 +715,9 @@ public class TicketService {
         }
     }
 
+    /**
+     * 写入单个场次库存。
+     */
     private void upsertOneTimeslotInventory(Long ticketId, LocalDate date, Long timeslotId, int target) {
         TicketInventoryRow row = ticketInventoryMapper.lockOne(ticketId, date, timeslotId);
         if (row == null) {
@@ -640,10 +736,16 @@ public class TicketService {
         }
     }
 
+    /**
+     * 判断日期是否在门票有效期内。
+     */
     private boolean isValidDate(Ticket ticket, LocalDate date) {
         return ticket.getValidDate() == null || ticket.getValidDate().equals(date);
     }
 
+    /**
+     * 构造库存返回对象。
+     */
     private TicketDto.InventoryResp toInventoryResp(TicketInventoryRow row) {
         int totalQty = row.getTotalQty() == null ? 0 : row.getTotalQty();
         int soldQty = row.getSoldQty() == null ? 0 : row.getSoldQty();

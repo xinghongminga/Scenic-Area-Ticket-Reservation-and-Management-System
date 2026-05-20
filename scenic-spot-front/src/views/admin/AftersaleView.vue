@@ -165,7 +165,7 @@ onMounted(load);
         </template>
       </el-table-column>
       <el-table-column prop="reason" label="原因" min-width="180" show-overflow-tooltip />
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="scope">
           <div v-if="scope.row.status === 'SUBMITTED'" class="actions">
             <el-button type="success" size="small" @click="approve(scope.row.reqNo)">通过</el-button>
@@ -200,7 +200,8 @@ onMounted(load);
 .head h3 { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; }
 .head p { margin: 8px 0 0; color: #64748b; font-size: 15px; }
 .search-row { display: grid; grid-template-columns: 1fr 180px auto auto; gap: 8px; margin-bottom: 12px; }
-.actions { display: flex; gap: 8px; }
+.actions { display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; row-gap: 6px; }
+.actions :deep(.el-button) { margin-left: 0; }
 .done-wrap { display: flex; justify-content: center; }
 .data-table {
   border-radius: 14px;

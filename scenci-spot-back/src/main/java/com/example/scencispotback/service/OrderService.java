@@ -374,6 +374,9 @@ public class OrderService {
         return "\"" + val.replace("\"", "\"\"") + "\"";
     }
 
+    /**
+     * 判断订单是否已超时未支付。
+     */
     private boolean isExpired(TicketOrder order, LocalDateTime now) {
         if (order == null || order.getCreatedAt() == null) {
             return false;
@@ -381,6 +384,9 @@ public class OrderService {
         return !order.getCreatedAt().plusMinutes(unpaidTtlMinutes).isAfter(now);
     }
 
+    /**
+     * 关闭超时未支付订单（已加锁场景）。
+     */
     private boolean closeExpiredUnpaidOrderLocked(TicketOrder order, LocalDateTime now) {
         if (order == null || !"UNPAID".equals(order.getStatus()) || !isExpired(order, now)) {
             return false;
@@ -409,6 +415,9 @@ public class OrderService {
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 
+    /**
+     * 校验出行日期是否可预订。
+     */
     private void validateVisitDate(LocalDate visitDate, Ticket ticket) {
         LocalDate today = LocalDate.now();
         LocalDate maxDate = today.plusDays(BOOKABLE_DAYS - 1L);

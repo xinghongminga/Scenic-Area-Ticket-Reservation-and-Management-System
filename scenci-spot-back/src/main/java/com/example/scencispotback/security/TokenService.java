@@ -26,6 +26,7 @@ public class TokenService {
         this.tokenTtlSeconds = tokenTtlSeconds;
     }
 
+    // 说明: 执行issueToken方法（issue token）。
     public String issueToken(LoginUser loginUser) {
         String token = UUID.randomUUID().toString().replace("-", "");
         String key = tokenKey(token);
@@ -37,6 +38,7 @@ public class TokenService {
         }
     }
 
+    // 说明: 执行parseToken方法（parse token）。
     public LoginUser parseToken(String token) {
         String value = redisTemplate.opsForValue().get(tokenKey(token));
         if (value == null || value.isBlank()) {
@@ -49,6 +51,7 @@ public class TokenService {
         }
     }
 
+    // 说明: 执行tokenKey方法（token key）。
     private String tokenKey(String token) {
         return "auth:token:" + token;
     }

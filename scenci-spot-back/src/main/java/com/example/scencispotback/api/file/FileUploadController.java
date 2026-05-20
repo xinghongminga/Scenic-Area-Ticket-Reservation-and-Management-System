@@ -3,7 +3,7 @@ package com.example.scencispotback.api.file;
 import com.example.scencispotback.common.ApiResponse;
 import com.example.scencispotback.common.BizException;
 import com.example.scencispotback.security.Authz;
-import com.example.scencispotback.service.AliOssService;
+import com.example.scencispotback.service.LocalStorageService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,23 +25,29 @@ import java.util.UUID;
 // 文件上传控制器
 public class FileUploadController {
 
-    private final AliOssService aliOssService;
+    private final LocalStorageService localStorageService;
     private final Path videoBaseDir;
 
-    public FileUploadController(AliOssService aliOssService,
+    public FileUploadController(LocalStorageService localStorageService,
                                 @org.springframework.beans.factory.annotation.Value("${app.video-upload.base-dir:${user.home}/Desktop/毕业设计/video}") String videoBaseDir) {
-        this.aliOssService = aliOssService;
+        this.localStorageService = localStorageService;
         this.videoBaseDir = Path.of(videoBaseDir);
     }
 
     @PostMapping("/image/upload")
+    /**
+     * 上传图片文件并返回可访问URL。
+     */
     public ApiResponse<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
         Authz.requireRole("ADMIN");
-        String url = aliOssService.uploadImage(file);
+        String url = localStorageService.uploadImage(file);
         return ApiResponse.ok(Map.of("url", url));
     }
 
     @PostMapping(value = "/video/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    /**
+     * 上传视频文件并返回本地保存路径。
+     */
     public ApiResponse<Map<String, String>> uploadVideo(@RequestParam("file") MultipartFile file) {
         Authz.requireRole("ADMIN");
         if (file == null || file.isEmpty()) {

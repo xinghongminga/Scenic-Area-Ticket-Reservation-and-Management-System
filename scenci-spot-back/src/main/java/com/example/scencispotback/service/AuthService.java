@@ -52,12 +52,18 @@ public class AuthService {
         this.wechatMiniAppSecret = wechatMiniAppSecret;
     }
 
+    /**
+     * 发送验证码并写入缓存。
+     */
     public String sendCode(String phone) {
         String code = String.format("%06d", random.nextInt(1_000_000));
         redisTemplate.opsForValue().set(codeKey(phone), code, Duration.ofSeconds(codeTtlSeconds));
         return code;
     }
 
+    /**
+     * 使用验证码注册账号。
+     */
     public AuthDto.LoginResp registerByCode(AuthDto.RegisterByCodeReq req) {
         String expected = redisTemplate.opsForValue().get(codeKey(req.phone()));
         if (expected == null || !expected.equals(req.code())) {
@@ -84,6 +90,9 @@ public class AuthService {
         return loginResp(user);
     }
 
+    /**
+     * 使用验证码登录。
+     */
     public AuthDto.LoginResp loginByCode(AuthDto.LoginByCodeReq req) {
         String expected = redisTemplate.opsForValue().get(codeKey(req.phone()));
         if (expected == null || !expected.equals(req.code())) {
@@ -96,6 +105,9 @@ public class AuthService {
         return loginResp(user);
     }
 
+    /**
+     * 使用账号密码登录。
+     */
     public AuthDto.LoginResp loginByPassword(AuthDto.LoginByPasswordReq req) {
         UserAccount user = userAccountMapper.findByUsername(req.username());
         if (user == null) {
@@ -113,6 +125,9 @@ public class AuthService {
         return loginResp(user);
     }
 
+    /**
+     * 模拟第三方OAuth登录。
+     */
     public AuthDto.LoginResp loginByOAuthMock(AuthDto.OAuthMockReq req) {
         UserAccount user = userAccountMapper.findByOauth(req.provider(), req.mockOpenId());
         if (user == null) {
@@ -123,7 +138,11 @@ public class AuthService {
         return loginResp(user);
     }
 
+    /**
+     * 微信小程序登录。
+     */
     public AuthDto.LoginResp loginByWechatMini(AuthDto.WechatMiniLoginReq req) {
+        // 用小程序传的 code，去微信官方服务器换取 用户唯一ID openId
         String openId = resolveWechatMiniOpenId(req.code(), req.devOpenId());
         UserAccount user = userAccountMapper.findByOauth("WECHAT_MINI_PROGRAM", openId);
         String nickname = (req.nickname() == null || req.nickname().isBlank()) ? "微信用户" : req.nickname();
@@ -144,6 +163,9 @@ public class AuthService {
         return loginResp(user);
     }
 
+    /**
+     * 获取当前登录用户信息。
+     */
     public AuthDto.LoginResp me() {
         LoginUser loginUser = UserContext.get();
         if (loginUser == null) {
@@ -152,11 +174,17 @@ public class AuthService {
         return new AuthDto.LoginResp(null, loginUser.userId(), loginUser.role(), loginUser.nickname(), null);
     }
 
+    /**
+     * 生成登录响应并签发Token。
+     */
     private AuthDto.LoginResp loginResp(UserAccount user) {
         String token = tokenService.issueToken(new LoginUser(user.getId(), user.getRole(), user.getScenicId(), user.getNickname()));
         return new AuthDto.LoginResp(token, user.getId(), user.getRole(), user.getNickname(), user.getAvatarUrl());
     }
 
+    /**
+     * 通过微信接口换取OpenId。
+     */
     private String resolveWechatMiniOpenId(String code, String devOpenId) {
         if (wechatMiniAppId == null || wechatMiniAppId.isBlank() || wechatMiniAppSecret == null || wechatMiniAppSecret.isBlank()) {
             if (devOpenId != null && !devOpenId.isBlank()) {
@@ -196,6 +224,9 @@ public class AuthService {
         }
     }
 
+    /**
+     * 判断两个字符串是否都为空或相等。
+     */
     private boolean equalsNullable(String a, String b) {
         if (a == null && b == null) {
             return true;
@@ -206,6 +237,9 @@ public class AuthService {
         return a.equals(b);
     }
 
+    /**
+     * 生成验证码缓存Key。
+     */
     private String codeKey(String phone) {
         return "auth:code:" + phone;
     }

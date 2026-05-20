@@ -29,6 +29,9 @@ public class ReportService {
         this.flowAreaMinuteMapper = flowAreaMinuteMapper;
     }
 
+    /**
+     * 查询销售统计数据。
+     */
     public ReportDto.SalesResp sales(Long scenicId, LocalDateTime start, LocalDateTime end) {
         Integer totalAmount = reportMapper.salesAmount(scenicId, start, end);
         Integer orderCount = reportMapper.paidOrderCount(scenicId, start, end);
@@ -38,6 +41,9 @@ public class ReportService {
         return new ReportDto.SalesResp(scenicId, start, end, orderCount, totalAmount, byTicket);
     }
 
+    /**
+     * 查询客流趋势数据。
+     */
     public ReportDto.FlowResp flow(Long scenicId, LocalDateTime start, LocalDateTime end) {
         List<ReportDto.FlowPoint> points = flowMinuteMapper.listRange(scenicId, start, end).stream()
             .map(this::mapFlow)
@@ -45,6 +51,9 @@ public class ReportService {
         return new ReportDto.FlowResp(scenicId, start, end, points);
     }
 
+    /**
+     * 查询热力图数据。
+     */
     public ReportDto.HeatmapResp heatmap(Long scenicId, LocalDateTime start, LocalDateTime end) {
         List<ReportDto.HeatmapPoint> points = flowAreaMinuteMapper.listRange(scenicId, start, end).stream()
             .map(p -> new ReportDto.HeatmapPoint(p.getAreaCode(), p.getStatMinute(), p.getCrowdCount()))
@@ -52,6 +61,9 @@ public class ReportService {
         return new ReportDto.HeatmapResp(scenicId, start, end, points);
     }
 
+    /**
+     * 生成销售报表CSV内容。
+     */
     public String exportSalesCsv(Long scenicId, LocalDateTime start, LocalDateTime end) {
         ReportDto.SalesResp sales = sales(scenicId, start, end);
         StringBuilder sb = new StringBuilder();
@@ -65,6 +77,9 @@ public class ReportService {
         return sb.toString();
     }
 
+    /**
+     * 生成客流报表CSV内容。
+     */
     public String exportFlowCsv(Long scenicId, LocalDateTime start, LocalDateTime end) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         StringBuilder sb = new StringBuilder();
@@ -78,12 +93,18 @@ public class ReportService {
         return sb.toString();
     }
 
+    /**
+     * 转换销售统计行数据。
+     */
     private ReportDto.SalesTicketStat mapSalesTicket(Map<String, Object> row) {
         String ticketName = String.valueOf(row.getOrDefault("ticketName", "未命名门票"));
         Integer qty = Integer.parseInt(String.valueOf(row.getOrDefault("qty", 0)));
         return new ReportDto.SalesTicketStat(ticketName, qty);
     }
 
+    /**
+     * 转换客流点位数据。
+     */
     private ReportDto.FlowPoint mapFlow(FlowMinutePoint p) {
         return new ReportDto.FlowPoint(p.getStatMinute(), p.getInCount(), p.getOutCount(), p.getInParkCount());
     }
