@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.RefundRuleMapper">
+
+  <select id="listByScenicId" resultType="com.example.scencispotback.domain.RefundRule">
+    select * from refund_rule where scenic_id = #{scenicId} order by id asc
+  </select>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.RefundRule">
+    select * from refund_rule where id = #{id}
+  </select>
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.RefundRule" useGeneratedKeys="true" keyProperty="id">
+    insert into refund_rule(scenic_id, name, free_refund_hours, allow_reschedule)
+    values(#{scenicId}, #{name}, #{freeRefundHours}, #{allowReschedule})
+  </insert>
+
+  <update id="update" parameterType="com.example.scencispotback.domain.RefundRule">
+    update refund_rule
+    set name=#{name}, free_refund_hours=#{freeRefundHours}, allow_reschedule=#{allowReschedule}, updated_at=now()
+    where id=#{id}
+  </update>
+
+  <delete id="deleteById">
+    delete from refund_rule where id=#{id}
+  </delete>
+</mapper>

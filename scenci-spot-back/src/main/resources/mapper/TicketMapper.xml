@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.TicketMapper">
+
+  <select id="list" resultType="com.example.scencispotback.domain.Ticket">
+    select t.* from ticket t where 1=1
+    <if test="scenicId != null"> and t.scenic_id = #{scenicId}</if>
+    <if test="ticketType != null and ticketType != ''"> and t.ticket_type = #{ticketType}</if>
+    <if test="keyword != null and keyword != ''"> and t.name like concat('%', #{keyword}, '%')</if>
+    <if test="priceMin != null"> and t.price_cent &gt;= #{priceMin}</if>
+    <if test="priceMax != null"> and t.price_cent &lt;= #{priceMax}</if>
+    <if test="onlyOnline == true"> and t.status = 1</if>
+    order by t.id asc
+  </select>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.Ticket">
+    select * from ticket where id = #{id}
+  </select>
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.Ticket" useGeneratedKeys="true" keyProperty="id">
+    insert into ticket(scenic_id, name, image_url, description, ticket_type, price_cent, stock_qty, morning_enabled, afternoon_enabled, valid_date, refund_rule_id, status)
+    values(#{scenicId}, #{name}, #{imageUrl}, #{description}, #{ticketType}, #{priceCent}, #{stockQty}, #{morningEnabled}, #{afternoonEnabled}, #{validDate}, #{refundRuleId}, #{status})
+  </insert>
+
+  <update id="update" parameterType="com.example.scencispotback.domain.Ticket">
+    update ticket
+    set name=#{name}, image_url=#{imageUrl}, description=#{description}, ticket_type=#{ticketType}, price_cent=#{priceCent}, stock_qty=#{stockQty},
+        morning_enabled=#{morningEnabled}, afternoon_enabled=#{afternoonEnabled}, valid_date=#{validDate}, refund_rule_id=#{refundRuleId}, updated_at=now()
+    where id=#{id}
+  </update>
+
+  <update id="updateStatus">
+    update ticket set status=#{status}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="batchUpdateStatus">
+    update ticket set status=#{status}, updated_at=now() where id in
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </update>
+
+  <delete id="deleteById">
+    delete from ticket where id = #{id}
+  </delete>
+</mapper>

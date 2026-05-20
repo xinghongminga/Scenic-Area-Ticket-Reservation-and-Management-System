@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.UserAccountMapper">
+
+  <select id="findById" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where id = #{id}
+  </select>
+
+  <select id="listFiltered" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where 1=1
+    <if test="keyword != null and keyword != ''">
+      and (phone like concat('%',#{keyword},'%') or username like concat('%',#{keyword},'%') or nickname like concat('%',#{keyword},'%') or full_name like concat('%',#{keyword},'%') or id_card_no like concat('%',#{keyword},'%'))
+    </if>
+    <if test="role != null and role != ''"> and role = #{role}</if>
+    <if test="status != null"> and status = #{status}</if>
+    order by id desc
+  </select>
+
+  <update id="updateProfile">
+    update user_account
+    set nickname=#{nickname}, full_name=#{fullName}, id_card_no=#{idCardNo}, scenic_id=#{scenicId}, role=#{role}, updated_at=now()
+    where id=#{id}
+  </update>
+
+  <update id="updatePassword">
+    update user_account set password_hash=#{password}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="updateStatus">
+    update user_account set status=#{status}, updated_at=now() where id=#{id}
+  </update>
+
+  <select id="findByPhone" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where phone = #{phone} limit 1
+  </select>
+
+  <select id="findByUsername" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where username = #{username} limit 1
+  </select>
+
+  <select id="findByOauth" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where oauth_provider = #{provider} and oauth_open_id = #{openId} limit 1
+  </select>
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.UserAccount" useGeneratedKeys="true" keyProperty="id">
+    insert into user_account(role, scenic_id, status, login_type, phone, username, password_hash, nickname, full_name, id_card_no)
+    values(#{role}, #{scenicId}, #{status}, #{loginType}, #{phone}, #{username}, #{passwordHash}, #{nickname}, #{fullName}, #{idCardNo})
+  </insert>
+
+  <insert id="insertOauthUser">
+    insert into user_account(role, scenic_id, status, login_type, nickname, avatar_url, oauth_provider, oauth_open_id)
+    values(#{role}, #{scenicId}, #{status}, #{loginType}, #{nickname}, #{avatarUrl}, #{provider}, #{openId})
+  </insert>
+
+  <update id="updateOauthProfile">
+    update user_account set nickname=#{nickname}, avatar_url=#{avatarUrl}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="updateMyProfile">
+    update user_account set nickname=#{nickname}, avatar_url=#{avatarUrl}, phone=#{phone}, updated_at=now() where id=#{id}
+  </update>
+
+  <select id="listActiveByRoles" resultType="com.example.scencispotback.domain.UserAccount">
+    select * from user_account where status=1 and role in
+    <foreach collection="roles" item="role" open="(" separator="," close=")">#{role}</foreach>
+    order by id asc
+  </select>
+</mapper>

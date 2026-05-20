@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.VideoAnalysisJobMapper">
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.VideoAnalysisJob" useGeneratedKeys="true" keyProperty="id">
+    insert into video_analysis_job(scenic_id, video_path, area_code, direction, sample_ms, status, created_by)
+    values(#{scenicId}, #{videoPath}, #{areaCode}, #{direction}, #{sampleMs}, #{status}, #{createdBy})
+  </insert>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.VideoAnalysisJob">
+    select * from video_analysis_job where id=#{id} limit 1
+  </select>
+
+  <select id="listAll" resultType="com.example.scencispotback.domain.VideoAnalysisJob">
+    select * from video_analysis_job order by id desc
+  </select>
+
+  <delete id="deleteById">
+    delete from video_analysis_job where id=#{id}
+  </delete>
+
+  <update id="updateStatus">
+    update video_analysis_job set status=#{status}, error_msg=#{errorMsg}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="claimForRunning">
+    update video_analysis_job set status='RUNNING', error_msg=null, updated_at=now() where id=#{id} and status in ('PENDING','FAILED')
+  </update>
+
+  <update id="claimForRunningOrStale">
+    update video_analysis_job set status='RUNNING', error_msg=null, updated_at=now()
+    where id=#{id} and (status in ('PENDING','FAILED') or (status='RUNNING' and updated_at &lt; #{staleBefore}))
+  </update>
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.TicketOrderItemMapper">
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.TicketOrderItem" useGeneratedKeys="true" keyProperty="id">
+    insert into ticket_order_item(order_id, ticket_id, ticket_name, unit_price_cent, qty, amount_cent)
+    values(#{orderId}, #{ticketId}, #{ticketName}, #{unitPriceCent}, #{qty}, #{amountCent})
+  </insert>
+
+  <select id="listByOrderId" resultType="com.example.scencispotback.domain.TicketOrderItem">
+    select * from ticket_order_item where order_id=#{orderId}
+  </select>
+
+  <select id="countByTicketId" resultType="int">
+    select count(1) from ticket_order_item where ticket_id=#{ticketId}
+  </select>
+
+  <update id="updateTicketForReschedule">
+    update ticket_order_item
+    set ticket_id=#{ticketId}, ticket_name=#{ticketName}, unit_price_cent=#{unitPriceCent}, amount_cent=#{amountCent}
+    where id=#{id}
+  </update>
+</mapper>

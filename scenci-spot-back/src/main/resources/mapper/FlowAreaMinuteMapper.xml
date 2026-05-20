@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.FlowAreaMinuteMapper">
+
+  <insert id="upsert">
+    insert into flow_area_minute(scenic_id, area_code, stat_minute, crowd_count)
+    values(#{scenicId}, #{areaCode}, #{statMinute}, #{crowdCount})
+    on duplicate key update crowd_count=#{crowdCount}, updated_at=now()
+  </insert>
+
+  <select id="listRange" resultType="com.example.scencispotback.domain.FlowAreaMinutePoint">
+    select scenic_id, area_code, stat_minute, crowd_count
+    from flow_area_minute
+    where scenic_id=#{scenicId} and stat_minute between #{start} and #{end}
+    order by stat_minute asc
+  </select>
+</mapper>

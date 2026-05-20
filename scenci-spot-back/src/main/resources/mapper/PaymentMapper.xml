@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.PaymentMapper">
+
+  <insert id="insertSuccess">
+    insert into payment(order_id, pay_no, channel, status, amount_cent, gateway_trade_no, mock_payload)
+    values(#{orderId}, #{payNo}, 'VIRTUAL', 'SUCCESS', #{amountCent}, #{gatewayTradeNo}, #{payload})
+  </insert>
+</mapper>

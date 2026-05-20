@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.ScenicAreaMapper">
+
+  <select id="listAll" resultType="com.example.scencispotback.domain.ScenicArea">
+    select * from scenic_area where status = 1 order by id asc
+  </select>
+
+  <select id="listAllAdmin" resultType="com.example.scencispotback.domain.ScenicArea">
+    select * from scenic_area order by id asc
+  </select>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.ScenicArea">
+    select * from scenic_area where id = #{id}
+  </select>
+
+  <select id="listByIds" resultType="com.example.scencispotback.domain.ScenicArea">
+    select * from scenic_area where id in
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </select>
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.ScenicArea" useGeneratedKeys="true" keyProperty="id">
+    insert into scenic_area(name, address, open_time_desc, contact_phone, status)
+    values(#{name}, #{address}, #{openTimeDesc}, #{contactPhone}, #{status})
+  </insert>
+
+  <update id="update" parameterType="com.example.scencispotback.domain.ScenicArea">
+    update scenic_area
+    set name=#{name}, address=#{address}, open_time_desc=#{openTimeDesc}, contact_phone=#{contactPhone}, updated_at=now()
+    where id=#{id}
+  </update>
+
+  <update id="updateStatus">
+    update scenic_area set status=#{status}, updated_at=now() where id=#{id}
+  </update>
+</mapper>

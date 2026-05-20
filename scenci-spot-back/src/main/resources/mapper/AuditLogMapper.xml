@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.AuditLogMapper">
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.AuditLog" useGeneratedKeys="true" keyProperty="id">
+    insert into sys_audit_log(operator_id, operator_role, module, action, target_type, target_id, detail, ip)
+    values(#{operatorId}, #{operatorRole}, #{module}, #{action}, #{targetType}, #{targetId}, #{detail}, #{ip})
+  </insert>
+
+  <select id="listAll" resultType="com.example.scencispotback.domain.AuditLog">
+    select * from sys_audit_log order by id desc limit #{pageSize} offset #{offset}
+  </select>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.AuditLog">
+    select * from sys_audit_log where id=#{id} limit 1
+  </select>
+</mapper>

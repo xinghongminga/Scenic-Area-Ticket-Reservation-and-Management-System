@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.VideoPeopleCountMapper">
+
+  <insert id="insert">
+    insert into video_people_count(job_id, scenic_id, area_code, stat_time, people_count)
+    values(#{jobId}, #{scenicId}, #{areaCode}, #{statTime}, #{peopleCount})
+  </insert>
+
+  <delete id="deleteByJobId">
+    delete from video_people_count where job_id=#{jobId}
+  </delete>
+</mapper>

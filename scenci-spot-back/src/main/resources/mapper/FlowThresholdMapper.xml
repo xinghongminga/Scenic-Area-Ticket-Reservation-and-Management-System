@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.FlowThresholdMapper">
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.FlowThreshold" useGeneratedKeys="true" keyProperty="id">
+    insert into flow_threshold(scenic_id, threshold_type, area_code, value, enabled)
+    values(#{scenicId}, #{thresholdType}, #{areaCode}, #{value}, #{enabled})
+  </insert>
+
+  <update id="update" parameterType="com.example.scencispotback.domain.FlowThreshold">
+    update flow_threshold
+    set threshold_type=#{thresholdType}, area_code=#{areaCode}, value=#{value}, enabled=#{enabled}, updated_at=now()
+    where id=#{id}
+  </update>
+
+  <delete id="delete">
+    delete from flow_threshold where id=#{id}
+  </delete>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.FlowThreshold">
+    select * from flow_threshold where id=#{id} limit 1
+  </select>
+
+  <select id="listByScenicId" resultType="com.example.scencispotback.domain.FlowThreshold">
+    select * from flow_threshold where scenic_id=#{scenicId} order by id asc
+  </select>
+
+  <select id="listEnabledByScenicId" resultType="com.example.scencispotback.domain.FlowThreshold">
+    select * from flow_threshold where scenic_id=#{scenicId} and enabled=1
+  </select>
+</mapper>

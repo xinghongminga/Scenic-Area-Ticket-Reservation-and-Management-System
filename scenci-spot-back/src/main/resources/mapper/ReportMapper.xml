@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.ReportMapper">
+
+  <select id="salesAmount" resultType="int">
+    select ifnull(sum(total_amount_cent),0)
+    from ticket_order
+    where scenic_id=#{scenicId}
+      and created_at between #{start} and #{end}
+      and status in ('PAID','USED','REFUNDING','RESCHEDULING','RESCHEDULED')
+  </select>
+
+  <select id="paidOrderCount" resultType="int">
+    select count(1)
+    from ticket_order
+    where scenic_id=#{scenicId}
+      and created_at between #{start} and #{end}
+      and status in ('PAID','USED','REFUNDING','RESCHEDULING','RESCHEDULED')
+  </select>
+
+  <select id="salesByTicket" resultType="map">
+    select oi.ticket_name as ticketName, ifnull(sum(oi.qty),0) as qty
+    from ticket_order_item oi
+    join ticket_order o on oi.order_id=o.id
+    where o.scenic_id=#{scenicId}
+      and o.created_at between #{start} and #{end}
+      and o.status in ('PAID','USED','REFUNDING','RESCHEDULING','RESCHEDULED')
+    group by oi.ticket_name
+    order by qty desc
+  </select>
+</mapper>

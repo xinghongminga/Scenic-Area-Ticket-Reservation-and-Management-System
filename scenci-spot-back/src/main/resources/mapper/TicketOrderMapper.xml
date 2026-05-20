@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.TicketOrderMapper">
+
+  <insert id="insert" parameterType="com.example.scencispotback.domain.TicketOrder" useGeneratedKeys="true" keyProperty="id">
+    insert into ticket_order(order_no, scenic_id, user_id, visit_date, timeslot_id, total_amount_cent, status)
+    values(#{orderNo}, #{scenicId}, #{userId}, #{visitDate}, #{timeslotId}, #{totalAmountCent}, #{status})
+  </insert>
+
+  <select id="findByOrderNo" resultType="com.example.scencispotback.domain.TicketOrder">
+    select * from ticket_order where order_no = #{orderNo} limit 1
+  </select>
+
+  <select id="findByOrderNoForUpdate" resultType="com.example.scencispotback.domain.TicketOrder">
+    select * from ticket_order where order_no = #{orderNo} limit 1 for update
+  </select>
+
+  <select id="findByOrderNoAndUserId" resultType="com.example.scencispotback.domain.TicketOrder">
+    select * from ticket_order where order_no = #{orderNo} and user_id=#{userId} limit 1
+  </select>
+
+  <select id="findById" resultType="com.example.scencispotback.domain.TicketOrder">
+    select * from ticket_order where id=#{id} limit 1
+  </select>
+
+  <select id="findByIdForUpdate" resultType="com.example.scencispotback.domain.TicketOrder">
+    select * from ticket_order where id=#{id} limit 1 for update
+  </select>
+
+  <select id="findExpiredUnpaidIds" resultType="long">
+    select id from ticket_order where status='UNPAID' and created_at &lt;= #{cutoff} order by id asc
+  </select>
+
+  <select id="findMyOrders" resultType="com.example.scencispotback.domain.TicketOrder">
+    select o.*, i.ticket_name as ticket_name, t.image_url as ticket_image_url
+    from ticket_order o
+    left join ticket_order_item i on i.id = (select min(i2.id) from ticket_order_item i2 where i2.order_id = o.id)
+    left join ticket t on t.id = i.ticket_id
+    where o.user_id=#{userId} and o.status != 'DELETED'
+    order by o.id desc
+  </select>
+
+  <select id="findAll" resultType="com.example.scencispotback.domain.TicketOrder">
+    select o.*, i.ticket_name as ticket_name, t.image_url as ticket_image_url,
+           u.phone as user_phone, u.nickname as user_nickname, u.full_name as user_full_name, u.id_card_no as user_id_card_no
+    from ticket_order o
+    left join ticket_order_item i on i.id = (select min(i2.id) from ticket_order_item i2 where i2.order_id = o.id)
+    left join ticket t on t.id = i.ticket_id
+    left join user_account u on u.id = o.user_id
+    where 1=1
+    <if test="status != null and status != ''"> and o.status = #{status}</if>
+    <if test="status == null or status == ''"> and o.status != 'DELETED'</if>
+    <if test="userPhone != null and userPhone != ''"> and u.phone like concat('%', #{userPhone}, '%')</if>
+    <if test="visitDate != null"> and o.visit_date = #{visitDate}</if>
+    <if test="createdAfter != null"> and o.created_at &gt;= #{createdAfter}</if>
+    <if test="createdBefore != null"> and o.created_at &lt;= #{createdBefore}</if>
+    order by o.id desc
+  </select>
+
+  <update id="updateStatus">
+    update ticket_order set status=#{toStatus}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="updateStatusAndReason">
+    update ticket_order set status=#{toStatus}, close_reason=#{closeReason}, updated_at=now() where id=#{id}
+  </update>
+
+  <update id="updateVisit">
+    update ticket_order set visit_date=#{visitDate}, timeslot_id=#{timeslotId}, updated_at=now() where id=#{id}
+  </update>
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.scencispotback.mapper.TicketProjectMapper">
+
+  <select id="listTicketIdsByProjectId" resultType="long">
+    select distinct ticket_id from ticket_project where project_id = #{projectId}
+  </select>
+
+  <select id="listByTicketId" resultType="com.example.scencispotback.domain.TicketProject">
+    select * from ticket_project where ticket_id = #{ticketId}
+  </select>
+
+  <select id="listByTicketIds" resultType="com.example.scencispotback.domain.TicketProject">
+    select * from ticket_project where ticket_id in
+    <foreach collection="ticketIds" item="ticketId" open="(" separator="," close=")">
+      #{ticketId}
+    </foreach>
+  </select>
+
+  <insert id="insert">
+    insert into ticket_project(ticket_id, project_id) values(#{ticketId}, #{projectId})
+  </insert>
+
+  <delete id="deleteByTicketId">
+    delete from ticket_project where ticket_id = #{ticketId}
+  </delete>
+</mapper>
