@@ -40,7 +40,7 @@ async function loginByPassword() {
   <main class="login-page">
     <section class="login-card el-theme">
       <div class="hero">
-        <span class="badge">Scenic Console</span>
+        <span class="badge">景区后台管理系统</span>
         <h1>景区票务与客流管控后台</h1>
         <p>请选择身份后登录，进入门票、订单、售后与监控管理工作台</p>
       </div>

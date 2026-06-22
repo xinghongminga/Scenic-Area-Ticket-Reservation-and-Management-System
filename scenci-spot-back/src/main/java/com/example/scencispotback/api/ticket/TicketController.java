@@ -120,7 +120,7 @@ public class TicketController {
     }
 
     /**
-     * 导出门票 Excel（可按景区过滤），用于后台下载。
+     * 导出门票 Excel，用于后台下载。
      */
     @GetMapping("/api/admin/tickets/export")
     public ResponseEntity<byte[]> exportExcel(@RequestParam(required = false) Long scenicId) {

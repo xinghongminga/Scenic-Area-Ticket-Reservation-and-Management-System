@@ -53,7 +53,7 @@ function aftersaleTypeText(t) {
 }
 
 function aftersaleStatusText(s) {
-  const map = { PENDING: '待审核', APPROVED: '已通过', REJECTED: '已拒绝' };
+  const map = { SUBMITTED: '待审核', DONE: '已完成', REJECTED: '已拒绝' };
   return map[s] || s;
 }
 

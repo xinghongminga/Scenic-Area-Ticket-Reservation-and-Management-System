@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -13,7 +13,14 @@ use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, TitleComponent,
 const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
 const form = reactive({ scenicId: 1, range: [monthStart, now] });
-const state = reactive({ loading: false, data: null, chart: {} });
+const state = reactive({ loading: false, data: null, chart: {}, page: 1, pageSize: 10 });
+const activeTab = ref('chart');
+
+const pagedPoints = computed(() => {
+  const points = state.data?.points || [];
+  const start = (state.page - 1) * state.pageSize;
+  return points.slice(start, start + state.pageSize);
+});
 
 function pad(num) {
   return String(num).padStart(2, '0');
@@ -51,6 +58,7 @@ async function load() {
   try {
     const range = getQueryRange();
     state.data = await request(`/api/analyst/report/flow?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
+    state.page = 1;
     if (state.data?.points?.length) {
       const times = state.data.points.map(d => d.statMinute);
       const inCounts = state.data.points.map(d => d.inCount || 0);
@@ -77,13 +85,13 @@ async function load() {
   }
 }
 
-async function exportCsv() {
+async function exportExcel() {
   try {
     const range = getQueryRange();
     const blob = await download(`/api/analyst/report/flow/export?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'flow_report.csv';
+    a.download = 'flow_report.xlsx';
     a.click();
     URL.revokeObjectURL(a.href);
     ElMessage.success('导出成功');
@@ -117,24 +125,52 @@ onMounted(load);
         :disabled-date="disabledFutureDate"
       />
       <el-button type="primary" :loading="state.loading" @click="load">查询</el-button>
-      <el-button type="success" plain @click="exportCsv">导出CSV</el-button>
+      <el-button type="success" plain @click="exportExcel">导出Excel</el-button>
     </div>
 
     <div v-if="state.data">
-      <div v-if="state.chart?.series" class="chart-container">
-        <VChart class="chart" :option="state.chart" autoresize />
-      </div>
-      <el-empty v-else description="当前时段暂无客流数据" />
+      <el-tabs v-model="activeTab" class="report-tabs">
+        <el-tab-pane label="图表" name="chart">
+          <div v-if="state.chart?.series" class="chart-container">
+            <VChart class="chart" :option="state.chart" autoresize />
+          </div>
+          <el-empty v-else description="当前时段暂无客流数据" />
+        </el-tab-pane>
 
-      <el-table
-        v-if="state.data?.points?.length"
-        :data="state.data.points"
-        border stripe class="data-table" size="small"
-      >
-        <el-table-column prop="statMinute" label="分钟" min-width="160" />
-        <el-table-column prop="inCount" label="入园" width="100" align="right" />
-        <el-table-column prop="outCount" label="出园" width="100" align="right" />
-      </el-table>
+        <el-tab-pane label="表格" name="table">
+          <el-table
+            v-if="state.data?.points?.length"
+            :data="pagedPoints"
+            border stripe class="data-table"
+          >
+            <el-table-column prop="statMinute" label="时间记录" min-width="180">
+              <template #default="{ row }">
+                <span class="time-text">{{ row.statMinute }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="inCount" label="入园人数" width="140" align="right">
+              <template #default="{ row }">
+                <span class="in-text">{{ row.inCount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="outCount" label="出园人数" width="140" align="right">
+              <template #default="{ row }">
+                <span class="out-text">{{ row.outCount }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div v-if="state.data?.points?.length" class="pager">
+            <el-pagination
+              v-model:current-page="state.page"
+              v-model:page-size="state.pageSize"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              :total="state.data.points.length"
+            />
+          </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </el-card>
 </template>
@@ -168,6 +204,12 @@ onMounted(load);
 }
 .data-table :deep(.cell) { line-height: 1.5; }
 .data-table :deep(.el-table__body tr:hover > td) { background: #f7faff; }
+
+.time-text { color: #64748b; font-size: 15px; }
+.in-text { color: #10b981; font-weight: 600; font-size: 15px; }
+.out-text { color: #ef4444; font-weight: 600; font-size: 15px; }
+
+.pager { display: flex; justify-content: center; margin-top: 20px; }
 
 @media (max-width: 768px) {
   .toolbar { flex-direction: column; align-items: flex-start; }

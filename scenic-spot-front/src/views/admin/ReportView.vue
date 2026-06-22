@@ -227,7 +227,11 @@ function onTabChange(tab) {
           >
             <el-table-column prop="ticketName" label="门票名称" min-width="160" />
             <el-table-column prop="qty" label="销量(张)" width="120" align="right" />
-            <el-table-column prop="amountCent" label="金额(分)" width="120" align="right" />
+            <el-table-column prop="amountCent" label="金额(元)" width="120" align="right">
+              <template #default="{ row }">
+                {{ (row.amountCent / 100).toFixed(2) }}
+              </template>
+            </el-table-column>
           </el-table>
         </div>
         <el-empty v-else description="请设置条件后点击查询" />

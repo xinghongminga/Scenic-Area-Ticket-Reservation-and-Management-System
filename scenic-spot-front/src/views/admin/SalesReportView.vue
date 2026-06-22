@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -14,6 +14,7 @@ const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
 const form = reactive({ scenicId: 1, range: [monthStart, now] });
 const state = reactive({ loading: false, data: null, chart: {} });
+const activeTab = ref('chart');
 
 function pad(num) {
   return String(num).padStart(2, '0');
@@ -79,13 +80,13 @@ async function load() {
   }
 }
 
-async function exportCsv() {
+async function exportExcel() {
   try {
     const range = getQueryRange();
     const blob = await download(`/api/analyst/report/sales/export?scenicId=${form.scenicId}&start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'sales_report.csv';
+    a.download = 'sales_report.xlsx';
     a.click();
     URL.revokeObjectURL(a.href);
     ElMessage.success('导出成功');
@@ -119,24 +120,42 @@ onMounted(load);
         :disabled-date="disabledFutureDate"
       />
       <el-button type="primary" :loading="state.loading" @click="load">查询</el-button>
-      <el-button type="success" plain @click="exportCsv">导出CSV</el-button>
+      <el-button type="success" plain @click="exportExcel">导出Excel</el-button>
     </div>
 
     <div v-if="state.data">
-      <div v-if="state.chart?.series" class="chart-container">
-        <VChart class="chart" :option="state.chart" autoresize />
-      </div>
-      <el-empty v-else description="当前时段暂无销量数据" />
+      <el-tabs v-model="activeTab" class="report-tabs">
+        <el-tab-pane label="图表" name="chart">
+          <div v-if="state.chart?.series" class="chart-container">
+            <VChart class="chart" :option="state.chart" autoresize />
+          </div>
+          <el-empty v-else description="当前时段暂无销量数据" />
+        </el-tab-pane>
 
-      <el-table
-        v-if="state.data?.byTicket?.length"
-        :data="state.data.byTicket"
-        border stripe class="data-table" size="small"
-      >
-        <el-table-column prop="ticketName" label="门票名称" min-width="160" />
-        <el-table-column prop="qty" label="销量(张)" width="120" align="right" />
-        <el-table-column prop="amountCent" label="金额(分)" width="120" align="right" />
-      </el-table>
+        <el-tab-pane label="表格" name="table">
+          <el-table
+            v-if="state.data?.byTicket?.length"
+            :data="state.data.byTicket"
+            border stripe class="data-table"
+          >
+            <el-table-column prop="ticketName" label="门票名称" min-width="200">
+              <template #default="{ row }">
+                <span class="ticket-name">{{ row.ticketName }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="qty" label="销售数量" width="150" align="right">
+              <template #default="{ row }">
+                <span class="qty-text">{{ row.qty }} 张</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="amountCent" label="销售金额" width="160" align="right">
+              <template #default="{ row }">
+                <span class="amount-text">¥ {{ (row.amountCent / 100).toFixed(2) }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </el-card>
 </template>
@@ -170,6 +189,10 @@ onMounted(load);
 }
 .data-table :deep(.cell) { line-height: 1.5; }
 .data-table :deep(.el-table__body tr:hover > td) { background: #f7faff; }
+
+.ticket-name { color: #334155; font-size: 15px; }
+.qty-text { color: #0f172a; font-weight: 500; font-size: 15px; }
+.amount-text { color: #0f172a; font-weight: 600; font-size: 15px; }
 
 @media (max-width: 768px) {
   .toolbar { flex-direction: column; align-items: flex-start; }

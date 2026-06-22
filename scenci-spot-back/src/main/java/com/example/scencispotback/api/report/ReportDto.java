@@ -6,7 +6,7 @@ import java.util.List;
 // 报表 DTO
 public class ReportDto {
 
-    public record SalesTicketStat(String ticketName, Integer qty) {}
+    public record SalesTicketStat(String ticketName, Integer qty, Integer amountCent) {}
 
     public record SalesResp(Long scenicId,
                             LocalDateTime start,

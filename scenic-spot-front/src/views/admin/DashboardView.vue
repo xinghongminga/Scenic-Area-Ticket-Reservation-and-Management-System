@@ -11,6 +11,7 @@ import { request } from '../../api/http';
 use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, TitleComponent, LegendComponent]);
 
 const activeTab = ref('daily');
+const viewMode = ref('chart');
 const form = reactive({ scenicId: 1, minutes: 120 });
 const state = reactive({ data: null, loading: false, dailyChart: {}, monthlyChart: {} });
 const pager = reactive({
@@ -98,6 +99,10 @@ onMounted(load);
     <div class="toolbar">
       <el-input-number v-model="form.minutes" :min="10" :step="10" controls-position="right" placeholder="分钟范围" style="width: 130px" />
       <el-button type="primary" :loading="state.loading" @click="load">刷新</el-button>
+      <el-radio-group v-model="viewMode" class="view-switch">
+        <el-radio-button label="chart">图表模式</el-radio-button>
+        <el-radio-button label="table">数据表格</el-radio-button>
+      </el-radio-group>
     </div>
 
     <div v-if="state.data" class="stats">
@@ -116,50 +121,80 @@ onMounted(load);
 
     <el-tabs v-model="activeTab" class="flow-tabs">
       <el-tab-pane label="日客流量" name="daily">
-        <div v-if="state.data?.trend?.length" class="chart-container">
-          <VChart class="chart" :option="state.dailyChart" autoresize />
-        </div>
-        <el-empty v-else description="暂无日客流数据" />
+        <template v-if="viewMode === 'chart'">
+          <div v-if="state.data?.trend?.length" class="chart-container">
+            <VChart class="chart" :option="state.dailyChart" autoresize />
+          </div>
+          <el-empty v-else description="暂无日客流图表数据" />
+        </template>
 
-        <el-table v-if="state.data?.trend?.length" :data="pagedDailyTrend" border stripe class="table data-table" size="small">
-          <el-table-column prop="statMinute" label="分钟" min-width="160" />
-          <el-table-column prop="inCount" label="入园" width="90" align="right" />
-          <el-table-column prop="outCount" label="出园" width="90" align="right" />
-          <el-table-column prop="inParkCount" label="在园" width="90" align="right" />
-        </el-table>
+        <template v-else-if="viewMode === 'table'">
+          <el-table v-if="state.data?.trend?.length" :data="pagedDailyTrend" border stripe class="table data-table">
+            <el-table-column prop="statMinute" label="分钟" min-width="160" />
+            <el-table-column prop="inCount" label="入园人数" width="120" align="right">
+              <template #default="{ row }">
+                <span class="in-text">{{ row.inCount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="outCount" label="出园人数" width="120" align="right">
+               <template #default="{ row }">
+                <span class="out-text">{{ row.outCount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="inParkCount" label="当前在园" width="120" align="right">
+              <template #default="{ row }">
+                <span class="park-text">{{ row.inParkCount }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
 
-        <div v-if="state.data?.trend?.length" class="pager">
-          <el-pagination
-            v-model:current-page="pager.dailyPage"
-            v-model:page-size="pager.dailyPageSize"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            :total="state.data.trend.length"
-          />
-        </div>
+          <div v-if="state.data?.trend?.length" class="pager">
+            <el-pagination
+              v-model:current-page="pager.dailyPage"
+              v-model:page-size="pager.dailyPageSize"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              :total="state.data.trend.length"
+            />
+          </div>
+          <el-empty v-if="!state.data?.trend?.length" description="暂无日客流表格数据" />
+        </template>
       </el-tab-pane>
 
       <el-tab-pane label="月客流量" name="monthly">
-        <div v-if="state.data?.monthlyTrend?.length" class="chart-container">
-          <VChart class="chart" :option="state.monthlyChart" autoresize />
-        </div>
-        <el-empty v-else description="暂无月客流数据" />
+        <template v-if="viewMode === 'chart'">
+          <div v-if="state.data?.monthlyTrend?.length" class="chart-container">
+            <VChart class="chart" :option="state.monthlyChart" autoresize />
+          </div>
+          <el-empty v-else description="暂无月客流图表数据" />
+        </template>
 
-        <el-table v-if="state.data?.monthlyTrend?.length" :data="pagedMonthlyTrend" border stripe class="table data-table" size="small">
-          <el-table-column prop="statDate" label="日期" min-width="120" />
-          <el-table-column prop="inCount" label="入园" width="100" align="right" />
-          <el-table-column prop="outCount" label="出园" width="100" align="right" />
-        </el-table>
+        <template v-else-if="viewMode === 'table'">
+          <el-table v-if="state.data?.monthlyTrend?.length" :data="pagedMonthlyTrend" border stripe class="table data-table">
+            <el-table-column prop="statDate" label="日期" min-width="120" />
+            <el-table-column prop="inCount" label="入园人数" width="140" align="right">
+              <template #default="{ row }">
+                <span class="in-text">{{ row.inCount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="outCount" label="出园人数" width="140" align="right">
+              <template #default="{ row }">
+                <span class="out-text">{{ row.outCount }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
 
-        <div v-if="state.data?.monthlyTrend?.length" class="pager">
-          <el-pagination
-            v-model:current-page="pager.monthlyPage"
-            v-model:page-size="pager.monthlyPageSize"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            :total="state.data.monthlyTrend.length"
-          />
-        </div>
+          <div v-if="state.data?.monthlyTrend?.length" class="pager">
+            <el-pagination
+              v-model:current-page="pager.monthlyPage"
+              v-model:page-size="pager.monthlyPageSize"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              :total="state.data.monthlyTrend.length"
+            />
+          </div>
+          <el-empty v-if="!state.data?.monthlyTrend?.length" description="暂无月客流表格数据" />
+        </template>
       </el-tab-pane>
     </el-tabs>
   </el-card>
@@ -200,7 +235,11 @@ onMounted(load);
 .data-table :deep(.el-table__body tr:hover > td) {
   background: #f7faff;
 }
+.in-text { color: #10b981; font-weight: 600; font-size: 15px; }
+.out-text { color: #ef4444; font-weight: 600; font-size: 15px; }
+.park-text { color: #f59e0b; font-weight: 600; font-size: 15px; }
 .pager { display: flex; justify-content: center; margin-top: 12px; }
+.view-switch { margin-left: auto; }
 
 @media (max-width: 768px) {
   .toolbar { flex-wrap: wrap; }

@@ -125,7 +125,7 @@ function closeTab(path, event) {
   <div class="layout">
     <aside class="sider">
       <div class="brand">
-        <h2>Scenic Console</h2>
+        <h2>景区后台管理系统</h2>
         <p>{{ nickname }} | {{ roleText }}</p>
       </div>
       <el-menu :key="menuKey" :default-active="activePath" :default-openeds="defaultOpeneds" class="menu" @select="go">

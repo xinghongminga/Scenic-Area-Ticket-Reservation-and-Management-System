@@ -17,6 +17,7 @@ const enterForm = reactive({ scenicId: 1, videoPath: '', areaCode: localStorage.
 const exitForm = reactive({ scenicId: 1, videoPath: '', areaCode: localStorage.getItem('video-job-exit-areaCode') || 'GATE_OUT', sampleMs: 1000 });
 const state = reactive({ list: [], running: null, deleting: null, uploading: '' });
 const pager = reactive({ enterPage: 1, enterPageSize: 10, exitPage: 1, exitPageSize: 10 });
+const activeTab = ref('enter');
 const enterFileRef = ref(null);
 const exitFileRef = ref(null);
 const pollingJobs = new Map();
@@ -170,9 +171,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="page">
-    <el-card shadow="never" class="module-card">
-      <template #header>
+  <el-card shadow="never" class="module-card">
+    <el-tabs v-model="activeTab" class="monitor-tabs">
+      <el-tab-pane label="入园监控" name="enter">
         <div class="module-head">
           <div class="title-wrap">
             <span class="module-dot enter"></span>
@@ -180,55 +181,53 @@ onBeforeUnmount(() => {
           </div>
           <span class="module-desc">检测到游客入园时，入园累计 +1，在园人数 +1</span>
         </div>
-      </template>
 
-      <div class="form-row">
-        <el-input v-model="enterForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
-        <input ref="enterFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'ENTER')" />
-        <el-button :loading="state.uploading === 'ENTER'" @click="triggerPick('ENTER')">选择视频</el-button>
-        <el-select v-model="enterForm.areaCode" style="width: 150px" @change="(value) => handleAreaChange('ENTER', value)">
-          <el-option v-for="item in AREA_CODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-input-number v-model.number="enterForm.sampleMs" :min="200" :step="200" controls-position="right" placeholder="采样ms" style="width: 120px" />
-        <el-button type="primary" @click="createJob('ENTER')">创建任务</el-button>
-      </div>
+        <div class="form-row">
+          <el-input v-model="enterForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
+          <input ref="enterFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'ENTER')" />
+          <el-button :loading="state.uploading === 'ENTER'" @click="triggerPick('ENTER')">选择视频</el-button>
+          <el-select v-model="enterForm.areaCode" style="width: 150px" @change="(value) => handleAreaChange('ENTER', value)">
+            <el-option v-for="item in AREA_CODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <el-input-number v-model.number="enterForm.sampleMs" :min="200" :step="200" controls-position="right" placeholder="采样ms" style="width: 120px" />
+          <el-button type="primary" @click="createJob('ENTER')">创建任务</el-button>
+        </div>
 
-      <el-table :data="pagedEnterJobs" border stripe class="job-table" size="small">
-        <el-table-column prop="id" label="ID" width="60" align="center" />
-        <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
-        <el-table-column label="区域" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag :type="areaTagType(row.areaCode)" effect="light" round>{{ areaText(row.areaCode) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
-        <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" size="small" :loading="state.running === row.id" @click="runJob(row.id)">执行</el-button>
-            <el-button type="danger" size="small" :loading="state.deleting === row.id" @click="deleteJob(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        <el-table :data="pagedEnterJobs" border stripe class="job-table" size="small">
+          <el-table-column prop="id" label="ID" width="60" align="center" />
+          <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
+          <el-table-column label="区域" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag :type="areaTagType(row.areaCode)" effect="light" round>{{ areaText(row.areaCode) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
+          <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
+          <el-table-column prop="status" label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="170" align="center">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" :loading="state.running === row.id" @click="runJob(row.id)">执行</el-button>
+              <el-button type="danger" size="small" :loading="state.deleting === row.id" @click="deleteJob(row.id)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <div class="pager">
-        <el-pagination
-          v-model:current-page="pager.enterPage"
-          v-model:page-size="pager.enterPageSize"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          :total="enterJobs.length"
-        />
-      </div>
-    </el-card>
+        <div class="pager">
+          <el-pagination
+            v-model:current-page="pager.enterPage"
+            v-model:page-size="pager.enterPageSize"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            :total="enterJobs.length"
+          />
+        </div>
+      </el-tab-pane>
 
-    <el-card shadow="never" class="module-card">
-      <template #header>
+      <el-tab-pane label="出园监控" name="exit">
         <div class="module-head">
           <div class="title-wrap">
             <span class="module-dot exit"></span>
@@ -236,63 +235,65 @@ onBeforeUnmount(() => {
           </div>
           <span class="module-desc">检测到游客出园时，在园人数 -1，出园累计 +1</span>
         </div>
-      </template>
 
-      <div class="form-row">
-        <el-input v-model="exitForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
-        <input ref="exitFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'EXIT')" />
-        <el-button :loading="state.uploading === 'EXIT'" @click="triggerPick('EXIT')">选择视频</el-button>
-        <el-select v-model="exitForm.areaCode" style="width: 150px" @change="(value) => handleAreaChange('EXIT', value)">
-          <el-option v-for="item in AREA_CODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
-        </el-select>
-        <el-input-number v-model.number="exitForm.sampleMs" :min="200" :step="200" controls-position="right" placeholder="采样ms" style="width: 120px" />
-        <el-button type="danger" @click="createJob('EXIT')">创建任务</el-button>
-      </div>
+        <div class="form-row">
+          <el-input v-model="exitForm.videoPath" placeholder="请选择视频文件" style="flex: 1" readonly />
+          <input ref="exitFileRef" type="file" accept="video/*" style="display: none" @change="onPickFile($event, 'EXIT')" />
+          <el-button :loading="state.uploading === 'EXIT'" @click="triggerPick('EXIT')">选择视频</el-button>
+          <el-select v-model="exitForm.areaCode" style="width: 150px" @change="(value) => handleAreaChange('EXIT', value)">
+            <el-option v-for="item in AREA_CODE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+          <el-input-number v-model.number="exitForm.sampleMs" :min="200" :step="200" controls-position="right" placeholder="采样ms" style="width: 120px" />
+          <el-button type="danger" @click="createJob('EXIT')">创建任务</el-button>
+        </div>
 
-      <el-table :data="pagedExitJobs" border stripe class="job-table" size="small">
-        <el-table-column prop="id" label="ID" width="60" align="center" />
-        <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
-        <el-table-column label="区域" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag :type="areaTagType(row.areaCode)" effect="light" round>{{ areaText(row.areaCode) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
-        <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" size="small" :loading="state.running === row.id" @click="runJob(row.id)">执行</el-button>
-            <el-button type="danger" size="small" :loading="state.deleting === row.id" @click="deleteJob(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        <el-table :data="pagedExitJobs" border stripe class="job-table" size="small">
+          <el-table-column prop="id" label="ID" width="60" align="center" />
+          <el-table-column prop="videoPath" label="视频路径" min-width="200" show-overflow-tooltip />
+          <el-table-column label="区域" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag :type="areaTagType(row.areaCode)" effect="light" round>{{ areaText(row.areaCode) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="sampleMs" label="采样(ms)" width="90" align="right" />
+          <el-table-column prop="errorMsg" label="失败原因" min-width="220" show-overflow-tooltip />
+          <el-table-column prop="status" label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'danger' : row.status === 'RUNNING' ? 'warning' : 'info'" size="small">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="170" align="center">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" :loading="state.running === row.id" @click="runJob(row.id)">执行</el-button>
+              <el-button type="danger" size="small" :loading="state.deleting === row.id" @click="deleteJob(row.id)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <div class="pager">
-        <el-pagination
-          v-model:current-page="pager.exitPage"
-          v-model:page-size="pager.exitPageSize"
-          :page-sizes="[10, 20, 50]"
-          layout="total, sizes, prev, pager, next"
-          :total="exitJobs.length"
-        />
-      </div>
-    </el-card>
-  </div>
+        <div class="pager">
+          <el-pagination
+            v-model:current-page="pager.exitPage"
+            v-model:page-size="pager.exitPageSize"
+            :page-sizes="[10, 20, 50]"
+            layout="total, sizes, prev, pager, next"
+            :total="exitJobs.length"
+          />
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </el-card>
 </template>
 
 <style scoped>
-.page { display: flex; flex-direction: column; gap: 18px; }
 .module-card {
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
-.module-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.monitor-tabs {
+  padding: 10px;
+}
+.module-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px;}
 .title-wrap { display: inline-flex; align-items: center; gap: 10px; }
 .module-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
 .module-dot.enter { background: #409eff; box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.14); }

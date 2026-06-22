@@ -73,7 +73,7 @@ public class HomeController {
         List<TicketOrder> todayOrders = ticketOrderMapper.findAll(null, null, null, todayStart, null);
         int todayOrderCount = todayOrders == null ? 0 : todayOrders.size();
 
-        List<AftersaleRequest> pendingAftersales = aftersaleRequestMapper.listAllFiltered(null, "PENDING");
+        List<AftersaleRequest> pendingAftersales = aftersaleRequestMapper.listAllFiltered(null, "SUBMITTED");
         int pendingAftersaleCount = pendingAftersales == null ? 0 : pendingAftersales.size();
 
         List<com.example.scencispotback.domain.UserAccount> users = userAccountMapper.listFiltered(null, null, null);

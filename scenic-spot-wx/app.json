@@ -19,15 +19,15 @@
     "list": [
       {
         "pagePath": "pages/tickets/tickets",
-        "text": "门票"
+        "text": "首页"
       },
       {
         "pagePath": "pages/mine/mine",
-        "text": "我的"
+        "text": "个人信息"
       },
       {
         "pagePath": "pages/messages/messages",
-        "text": "消息"
+        "text": "消息通知"
       }
     ]
   },

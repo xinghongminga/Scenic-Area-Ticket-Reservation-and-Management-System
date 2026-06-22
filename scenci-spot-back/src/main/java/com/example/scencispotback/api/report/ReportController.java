@@ -61,31 +61,31 @@ public class ReportController {
 
     @GetMapping("/sales/export")
     /**
-     * 导出销售报表CSV。
+     * 导出销售报表Excel。
      */
     public ResponseEntity<byte[]> exportSales(@RequestParam Long scenicId,
                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
         Authz.requireRole("ANALYST", "ADMIN");
-        String csv = reportService.exportSalesCsv(scenicId, start, end);
+        byte[] excel = reportService.exportSalesExcel(scenicId, start, end);
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=sales_report.csv")
-            .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-            .body(csv.getBytes(StandardCharsets.UTF_8));
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=sales_report.xlsx")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(excel);
     }
 
     @GetMapping("/flow/export")
     /**
-     * 导出客流报表CSV。
+     * 导出客流报表Excel。
      */
     public ResponseEntity<byte[]> exportFlow(@RequestParam Long scenicId,
                                              @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                              @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end) {
         Authz.requireRole("ANALYST", "ADMIN");
-        String csv = reportService.exportFlowCsv(scenicId, start, end);
+        byte[] excel = reportService.exportFlowExcel(scenicId, start, end);
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=flow_report.csv")
-            .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-            .body(csv.getBytes(StandardCharsets.UTF_8));
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=flow_report.xlsx")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(excel);
     }
 }

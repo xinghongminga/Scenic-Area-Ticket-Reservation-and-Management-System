@@ -21,7 +21,7 @@
   </select>
 
   <select id="salesByTicket" resultType="map">
-    select oi.ticket_name as ticketName, ifnull(sum(oi.qty),0) as qty
+    select oi.ticket_name as ticketName, ifnull(sum(oi.qty),0) as qty, ifnull(sum(oi.amount_cent),0) as amountCent
     from ticket_order_item oi
     join ticket_order o on oi.order_id=o.id
     where o.scenic_id=#{scenicId}
